@@ -1,1 +1,37 @@
 .venv
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.sqlite3
+
+# Environment Variables
+.env
+.env.*
+!.env.example
+
+# Testing / Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Linters / Type Checking / Cache
+.mypy_cache/
+.ruff_cache/
+.cache/
+
+# VS Code / IDE
+.vscode/
+.idea/
+
+# Node / React
+node_modules/
+dist/
+build/
+
+# Logs
+*.log
+
+# Operating System Files
+.DS_Store
+*Zone.Identifier*
