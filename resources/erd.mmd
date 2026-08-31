@@ -1,0 +1,64 @@
+%% TripSync ERD — source of truth is ERD.sql; keep this file in sync with it.
+%% Regenerate the PNG with:
+%%   npx -y -p @mermaid-js/mermaid-cli mmdc -i resources/erd.mmd -o resources/travel_planner_erd.png -b white -s 2
+erDiagram
+    GROUPS ||--o{ TRIPS : has
+    TRIPS ||--o{ ACTIVITIES : has
+    AUTH_USER ||--o{ MEMBERSHIPS : has
+    GROUPS ||--o{ MEMBERSHIPS : "has members"
+    AUTH_USER ||--o{ TRIP_VOTES : casts
+    TRIPS ||--o{ TRIP_VOTES : receives
+    AUTH_USER ||--o{ ACTIVITY_VOTES : casts
+    ACTIVITIES ||--o{ ACTIVITY_VOTES : receives
+
+    AUTH_USER {
+        int id PK
+        string username
+        string email
+    }
+    GROUPS {
+        bigint id PK
+        string name
+        date created_on
+    }
+    MEMBERSHIPS {
+        bigint id PK
+        int user_id FK
+        bigint group_id FK
+        boolean read_access
+        boolean write_access
+        boolean is_leader
+    }
+    TRIPS {
+        bigint id PK
+        bigint group_id FK
+        string name
+        string city
+        string state
+        string country
+    }
+    ACTIVITIES {
+        bigint id PK
+        bigint trip_id FK
+        string name
+        string street
+        string city
+        string state
+        string zip
+        string country
+        string place_id
+        integer cost_estimate_cents
+        string description
+    }
+    TRIP_VOTES {
+        bigint id PK
+        int user_id FK
+        bigint trip_id FK
+        timestamptz created_at
+    }
+    ACTIVITY_VOTES {
+        bigint id PK
+        int user_id FK
+        bigint activity_id FK
+        timestamptz created_at
+    }
