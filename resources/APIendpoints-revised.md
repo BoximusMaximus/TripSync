@@ -32,7 +32,7 @@
 | POST | `/api/token/refresh/` | new access token | rotation is on — response includes a new refresh token |
 | POST | `/api/token/logout/` | log out | blacklists the submitted refresh token |
 | GET | `/api/users/me/` | view profile | |
-| PATCH | `/api/users/me/` | update profile | |
+| PUT | `/api/users/me/` | update profile | |
 | DELETE | `/api/users/me/` | delete account | cascades memberships + votes (DB `ON DELETE CASCADE`) |
 | GET | `/api/users/me/groups/` | groups I belong to | Home page |
 
@@ -43,11 +43,11 @@
 | GET | `/api/groups/` | list all groups | groups are open to browse and join |
 | POST | `/api/groups/` | create group | creator's membership auto-created with `is_leader=True` |
 | GET | `/api/groups/<int:id>/` | group detail | includes `member_count`, members list |
-| PATCH | `/api/groups/<int:id>/` | rename | leader only |
+| PUT | `/api/groups/<int:id>/` | rename | leader only |
 | DELETE | `/api/groups/<int:id>/` | delete group | leader only |
 | POST | `/api/groups/<int:id>/join/` | join | request user; duplicate join → 400 (unique user+group) |
 | POST | `/api/groups/<int:id>/leave/` | leave | request user |
-| PATCH | `/api/groups/<int:gid>/members/<int:uid>/` | grant/revoke `read_access` / `write_access` | leader only |
+| PUT | `/api/groups/<int:gid>/members/<int:uid>/` | grant/revoke `read_access` / `write_access` | leader only |
 | DELETE | `/api/groups/<int:gid>/members/<int:uid>/` | remove member | leader only |
 
 ## Trips
@@ -57,7 +57,7 @@
 | GET | `/api/groups/<int:gid>/trips/` | list trips in group | Trips page |
 | POST | `/api/groups/<int:gid>/trips/` | create trip in group | replaces `add_group` — the group is set here |
 | GET | `/api/trips/<int:id>/` | trip detail | includes `vote_count`, `total_cost_cents`, `my_vote` |
-| PATCH | `/api/trips/<int:id>/` | edit trip | |
+| PUT | `/api/trips/<int:id>/` | edit trip | |
 | DELETE | `/api/trips/<int:id>/` | delete trip | cascades activities + votes |
 
 ### Trip votes
@@ -74,7 +74,7 @@
 | GET | `/api/trips/<int:tid>/activities/` | list activities for trip | Trip Detail page + map pins |
 | POST | `/api/trips/<int:tid>/activities/` | add activity | body: name, description, cost_estimate_cents, place_id **or** manual address |
 | GET | `/api/activities/<int:id>/` | activity detail | includes `vote_count`, `my_vote` |
-| PATCH | `/api/activities/<int:id>/` | edit activity | |
+| PUT | `/api/activities/<int:id>/` | edit activity | |
 | DELETE | `/api/activities/<int:id>/` | delete activity | |
 | GET | `/api/activities/find_coords/` | address → lat/lng + place_id | params: `street`, `city`, `state`, `zip`, `country` — the manual-address fallback (Geocoding) |
 | GET | `/api/activities/find_activities/` | search places near a point | params: `query`, `lat`, `lng`, `radius_m` (≤ 50000), `min_rating`, `max_results` (Places Text Search) |
@@ -124,18 +124,18 @@ Practical notes: the new Places API requires the field-mask header on every call
 
 | Original | Becomes |
 |---|---|
-| `/users/` get/"put" | `GET`/`PATCH /api/users/me/` |
+| `/users/` get/"put" | `GET`/`PUT /api/users/me/` |
 | `/users/login/` | `POST /api/token/` |
 | `/users/register/` | `POST /api/users/register/` |
 | `/users/delete/` | `DELETE /api/users/me/` |
 | `/groups/create/` | `POST /api/groups/` |
-| `/groups/<id>` | `GET`/`PATCH`/`DELETE /api/groups/<id>/` |
+| `/groups/<id>` | `GET`/`PUT`/`DELETE /api/groups/<id>/` |
 | `/groups/<id>/add_user/` | `POST /api/groups/<id>/join/` (self) · member management for leaders |
 | `/trips/create/` + `/trips/<id>/add_group/` | `POST /api/groups/<gid>/trips/` |
-| `/trips/<id>` | `GET`/`PATCH`/`DELETE /api/trips/<id>/` |
+| `/trips/<id>` | `GET`/`PUT`/`DELETE /api/trips/<id>/` |
 | `/trip_votes/<trip_id>` | `my_vote` + `vote_count` on `GET /api/trips/<id>/` |
 | `/trip_votes/<trip_id>/add_vote/` | `PUT /api/trips/<id>/vote/` (+ `DELETE` to remove) |
 | `/activities/create/` | `POST /api/trips/<tid>/activities/` |
-| `/activities/<id>` | `GET`/`PATCH`/`DELETE /api/activities/<id>/` |
+| `/activities/<id>` | `GET`/`PUT`/`DELETE /api/activities/<id>/` |
 | `/activities/find_coords/`, `/activities/find_activities/` | same, under `/api/` |
 | `/activities_votes/<activity_id>/add_vote/` | `POST /api/activities/<id>/vote/` (+ `DELETE` to remove) |
