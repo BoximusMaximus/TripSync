@@ -1,51 +1,93 @@
 @import "tailwindcss";
 
-/* One Dark Pro palette. Single dark theme — no light mode by design. */
+/* ========================================
+   TripSync Global Theme
+   Dark mode is the default
+   ======================================== */
+
 :root {
+  /* Backgrounds */
   --bg: #21252b;
   --bg-panel: #282c34;
   --bg-raised: #2c313a;
-  --bg-code: #282c34;
+
+  /* Borders */
   --border: #3a3f4b;
   --border-soft: #313640;
 
+  /* Text */
   --text: #abb2bf;
   --text-strong: #e6e6e6;
   --text-muted: #7f8896;
 
+  /* Accent */
   --accent: #61afef;
-  --accent-soft: #528bff;
-  --green: #98c379;
-  --purple: #c678dd;
-  --orange: #d19a66;
-  --red: #e06c75;
+  --accent-hover: #528bff;
 
+  /* Status colors */
+  --success: #98c379;
+  --warning: #d19a66;
+  --danger: #e06c75;
+
+  /* Typography */
   --sans:
     system-ui, -apple-system, "Segoe UI", Roboto, Helvetica,
     Arial, sans-serif;
-  --mono:
-    "JetBrains Mono", "Fira Code", ui-monospace,
-    SFMono-Regular, Consolas, monospace;
 
-  --sidebar-w: 260px;
-  --toc-w: 220px;
-  --main-w: 980px;
   --radius: 6px;
 
   color-scheme: dark;
 }
+
+/* ========================================
+   Light Theme
+   ======================================== */
+
+[data-theme="light"] {
+  /* Backgrounds */
+  --bg: #ffffff;
+  --bg-panel: #f5f6f8;
+  --bg-raised: #e9ebef;
+
+  /* Borders */
+  --border: #d1d5db;
+  --border-soft: #e5e7eb;
+
+  /* Text */
+  --text: #374151;
+  --text-strong: #1f2937;
+  --text-muted: #6b7280;
+
+  /* Accent */
+  --accent: #2f80c9;
+  --accent-hover: #1f6fb5;
+
+  /* Status colors */
+  --success: #4f8a3c;
+  --warning: #b56f2c;
+  --danger: #c94b55;
+
+  color-scheme: light;
+}
+
+/* ========================================
+   Global Reset
+   ======================================== */
 
 * {
   box-sizing: border-box;
 }
 
 html,
-body {
+body,
+#root {
   margin: 0;
   padding: 0;
+  min-height: 100%;
 }
 
 body {
+  min-height: 100vh;
   background: var(--bg);
   color: var(--text);
   font-family: var(--sans);
@@ -53,496 +95,111 @@ body {
   line-height: 1.6;
 }
 
+/* ========================================
+   Text
+   ======================================== */
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  color: var(--text-strong);
+}
+
+p {
+  color: var(--text);
+}
+
+/* ========================================
+   Links
+   ======================================== */
+
+/*
+  Important:
+  links inherit their color so components like the
+  Login / Signup tabs can control their own colors.
+*/
+
 a {
-  color: var(--accent);
-}
-
-/* ---------- layout ---------- */
-
-.layout {
-  display: grid;
-  grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
-  min-height: 100vh;
-}
-
-/* Only guide routes get the right-hand rail; the scaffold route stays two-up
-   rather than leaving an empty column. The trailing 1fr soaks up leftover width
-   on wide screens, which keeps the rail beside the prose instead of stranded
-   against the far edge. */
-.layout.has-toc {
-  grid-template-columns: var(--sidebar-w) minmax(
-      0,
-      var(--main-w)
-    ) var(--toc-w) minmax(0, 1fr);
-}
-
-.sidebar {
-  background: var(--bg-panel);
-  border-right: 1px solid var(--border);
-  padding: 1.5rem 0;
-  position: sticky;
-  top: 0;
-  height: 100vh;
-  overflow-y: auto;
-}
-
-.sidebar-brand {
-  display: block;
-  padding: 0 1.25rem 1.25rem;
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--text-strong);
+  color: inherit;
   text-decoration: none;
-  letter-spacing: -0.01em;
 }
 
-.sidebar-brand span {
-  color: var(--accent);
-}
+/* ========================================
+   Forms
+   ======================================== */
 
-.nav-group-label {
-  padding: 1rem 1.25rem 0.4rem;
-  margin: 0;
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-
-.nav-link {
-  display: block;
-  padding: 0.45rem 1.25rem;
-  color: var(--text);
-  text-decoration: none;
-  font-size: 0.88rem;
-  border-left: 2px solid transparent;
-}
-
-.nav-link:hover {
-  background: var(--bg-raised);
-  color: var(--text-strong);
-}
-
-.nav-link.is-active {
-  border-left-color: var(--accent);
-  background: var(--bg-raised);
-  color: var(--accent);
-  font-weight: 600;
-}
-
-.main {
-  padding: 2.5rem 3rem 5rem;
-  max-width: var(--main-w);
-  min-width: 0;
-}
-
-.page-title {
-  margin: 0 0 0.35rem;
-  font-size: 1.7rem;
-  font-weight: 700;
-  color: var(--text-strong);
-  letter-spacing: -0.02em;
-}
-
-.page-lede {
-  margin: 0 0 2rem;
-  color: var(--text-muted);
-  max-width: 68ch;
-}
-
-.main h2 {
-  margin: 2.4rem 0 0.75rem;
-  font-size: 1.15rem;
-  color: var(--text-strong);
-  font-weight: 650;
-  padding-bottom: 0.4rem;
-  border-bottom: 1px solid var(--border-soft);
-}
-
-.main h3 {
-  margin: 1.6rem 0 0.5rem;
-  font-size: 0.98rem;
-  color: var(--text-strong);
-  font-weight: 650;
-}
-
-/* Where scrollIntoView parks a jumped-to heading. Keep this below READING_LINE
-   in toc-view.js, or the spy lights the previous section after every jump. */
-.main h2,
-.main h3 {
-  scroll-margin-top: 1.5rem;
-}
-
-.main p {
-  margin: 0.75rem 0;
-  max-width: 74ch;
-}
-
-.main ul {
-  margin: 0.75rem 0;
-  padding-left: 1.25rem;
-  max-width: 74ch;
-}
-
-.main li {
-  margin: 0.3rem 0;
-}
-
-.main :not(pre) > code {
-  font-family: var(--mono);
-  font-size: 0.86em;
-  background: var(--bg-code);
-  border: 1px solid var(--border-soft);
-  border-radius: 4px;
-  padding: 0.08em 0.35em;
-  color: var(--orange);
-}
-
-/* ---------- callouts ---------- */
-
-.note,
-.warn {
-  margin: 1rem 0;
-  padding: 0.75rem 1rem;
-  border-left: 3px solid var(--accent);
-  background: var(--bg-panel);
-  border-radius: 0 var(--radius) var(--radius) 0;
-  max-width: 74ch;
-}
-
-.note > :first-child,
-.warn > :first-child {
-  margin-top: 0;
-}
-
-.note > :last-child,
-.warn > :last-child {
-  margin-bottom: 0;
-}
-
-.warn {
-  border-left-color: var(--orange);
-}
-
-/* ---------- code blocks ---------- */
-
-.code-block {
-  position: relative;
-  margin: 1rem 0;
-}
-
-.code-block pre {
-  margin: 0;
-  padding: 2.6rem 1rem 1rem;
-  background: var(--bg-code);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  overflow-x: auto;
-}
-
-.code-block code {
-  font-family: var(--mono);
-  font-size: 0.83rem;
-  line-height: 1.55;
-  background: none;
-  padding: 0;
-  border: 0;
-}
-
-.code-lang {
-  position: absolute;
-  top: 0.6rem;
-  left: 1rem;
-  font-family: var(--mono);
-  font-size: 0.68rem;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  pointer-events: none;
-}
-
-.copy-btn {
-  position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
-  z-index: 2;
-  font-family: var(--sans);
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: var(--text);
-  background: var(--bg-raised);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 0.28rem 0.6rem;
-  cursor: pointer;
-}
-
-.copy-btn:hover {
-  color: var(--text-strong);
-  border-color: var(--accent);
-}
-
-.copy-btn.is-copied {
-  color: var(--green);
-  border-color: var(--green);
-}
-
-/* ---------- scaffold generator ---------- */
-
-.preset-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  margin-bottom: 1.25rem;
-}
-
-.preset-tab {
+input,
+select,
+textarea {
   font: inherit;
-  font-size: 0.82rem;
-  padding: 0.35rem 0.8rem;
-  background: var(--bg-panel);
+
   color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  cursor: pointer;
-}
 
-.preset-tab:hover {
-  color: var(--text-strong);
-}
-
-.preset-tab.is-active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #1b1f27;
-  font-weight: 650;
-}
-
-.tree {
-  font-family: var(--mono);
-  font-size: 0.85rem;
-  background: var(--bg-panel);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 0.75rem 0.5rem;
-  overflow-x: auto;
-}
-
-.tree-row {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.1rem 0.5rem;
-  border-radius: 4px;
-  white-space: nowrap;
-}
-
-.tree-row:hover {
-  background: var(--bg-raised);
-}
-
-.tree-prefix {
-  color: var(--text-muted);
-  white-space: pre;
-  user-select: none;
-}
-
-.tree-label {
-  display: inline-flex;
-  align-items: center;
-  min-width: 0;
-}
-
-/* The fixed half of a file name. Muted and unselectable so it reads as part of
-   the name while making clear it is not what the caret is editing. */
-.tree-ext {
-  color: var(--text-muted);
-  user-select: none;
-  margin-left: -0.2rem;
-}
-
-.tree-name {
-  padding: 0.05rem 0.25rem;
-  border-radius: 3px;
-  outline: none;
-  min-width: 1ch;
-}
-
-.tree-name:focus {
   background: var(--bg);
-  box-shadow: 0 0 0 1px var(--accent);
-}
 
-.tree-row.is-dir .tree-name {
-  color: var(--accent);
-  font-weight: 600;
-}
-
-.tree-actions {
-  display: flex;
-  gap: 0.15rem;
-  margin-left: auto;
-  padding-left: 1rem;
-  opacity: 0;
-}
-
-.tree-row:hover .tree-actions,
-.tree-row:focus-within .tree-actions {
-  opacity: 1;
-}
-
-.tree-btn {
-  font: inherit;
-  font-size: 0.72rem;
-  line-height: 1;
-  padding: 0.22rem 0.4rem;
-  background: transparent;
-  color: var(--text-muted);
   border: 1px solid var(--border);
-  border-radius: 3px;
-  cursor: pointer;
-}
-
-.tree-btn:hover {
-  color: var(--text-strong);
-  border-color: var(--accent);
-}
-
-.tree-btn.danger:hover {
-  color: var(--red);
-  border-color: var(--red);
-}
-
-.toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
-  margin: 1.25rem 0;
-}
-
-.btn {
-  font: inherit;
-  font-size: 0.85rem;
-  font-weight: 600;
-  padding: 0.45rem 0.9rem;
   border-radius: var(--radius);
-  border: 1px solid var(--border);
-  background: var(--bg-panel);
-  color: var(--text);
-  cursor: pointer;
+
+  padding: 0.6rem 0.75rem;
 }
 
-.btn:hover {
-  color: var(--text-strong);
-  border-color: var(--accent);
-}
-
-.btn-primary {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #1b1f27;
-}
-
-.btn-primary:hover {
-  color: #1b1f27;
-  filter: brightness(1.08);
-}
-
-.toolbar-toggle {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.82rem;
-  color: var(--text-muted);
-  margin-left: auto;
-  cursor: pointer;
-}
-
-/* ---------- table of contents ---------- */
-
-/* A hairline rail rather than a boxed panel, so it stays quieter than the
-   left nav. */
-.toc {
-  position: sticky;
-  top: 0;
-  /* Grid items stretch to the row height by default, which would make `sticky`
-     a no-op. The left sidebar sidesteps this with an outright height: 100vh;
-     this one wants its natural height. */
-  align-self: start;
-  max-height: 100vh;
-  overflow-y: auto;
-  padding: 2.6rem 1.5rem 3rem 0;
-}
-
-.toc-label {
-  margin: 0 0 0.5rem;
-  padding-left: 0.75rem;
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
+input::placeholder,
+textarea::placeholder {
   color: var(--text-muted);
 }
 
-.toc-link {
-  display: block;
-  width: 100%;
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgb(97 175 239 / 15%);
+}
+
+/* ========================================
+   Buttons
+   ======================================== */
+
+button {
   font: inherit;
-  font-size: 0.78rem;
-  line-height: 1.35;
-  text-align: left;
-  padding: 0.3rem 0.5rem 0.3rem 0.75rem;
-  background: none;
-  border: 0;
-  border-left: 1px solid var(--border-soft);
-  color: var(--text-muted);
   cursor: pointer;
 }
 
-.toc-link:hover {
-  color: var(--text-strong);
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
-.toc-link.is-active {
+/* ========================================
+   Reusable Theme Helpers
+   ======================================== */
+
+.panel {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.text-muted {
+  color: var(--text-muted);
+}
+
+.text-accent {
   color: var(--accent);
-  border-left-color: var(--accent);
 }
 
-.toc-link.level-3 {
-  padding-left: 1.6rem;
-  font-size: 0.74rem;
+.text-success {
+  color: var(--success);
 }
 
-/* ---------- responsive (nice-to-have) ---------- */
-
-/* 260px of nav plus 220px of rail squeezes the prose too hard below this, so
-   the rail is the first thing to go. */
-@media (max-width: 1180px) {
-  .layout.has-toc {
-    grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
-  }
-
-  .toc {
-    display: none;
-  }
+.text-warning {
+  color: var(--warning);
 }
 
-@media (max-width: 768px) {
-  .layout,
-  .layout.has-toc {
-    grid-template-columns: 1fr;
-  }
-
-  .sidebar {
-    position: static;
-    height: auto;
-    border-right: 0;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .main {
-    padding: 1.75rem 1.25rem 4rem;
-  }
+.text-danger {
+  color: var(--danger);
 }
