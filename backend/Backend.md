@@ -10,6 +10,8 @@ Django + Django REST Framework backend for TripSync. This doc tracks backend-spe
 
 ## Codys Notes 09/02/2026
 
+Migrated authentication from DRF token auth to JWT (simplejwt), then migrated again to deliver those JWTs as httponly cookies instead of in the JSON response body. This removes raw tokens from JS entirely and requires the frontend to send credentials with every request and attach a CSRF header on writes. See "Auth: JWT" below for the details frontend needs.
+
 ### Custom user model
 
 `AUTH_USER_MODEL = "auth_user_app.Auth_User"` (set in `tripsync_proj/settings.py`).
@@ -22,21 +24,24 @@ Django + Django REST Framework backend for TripSync. This doc tracks backend-spe
 
 **Note for the team:** `AUTH_USER_MODEL` must stay pointed at this model from before the first `migrate` — swapping the user model after migrations exist is a painful manual fix. If you're setting up a fresh environment, run migrations against this model from the start.
 
-### Auth: JWT (simplejwt)
+### Auth: JWT (simplejwt), delivered via httponly cookies
 
-We moved off `rest_framework.authtoken` and onto `rest_framework_simplejwt`. `DEFAULT_AUTHENTICATION_CLASSES` in `REST_FRAMEWORK` (settings.py) is now `JWTAuthentication`, and `"rest_framework.authtoken"` has been removed from `INSTALLED_APPS` — it's no longer used anywhere.
+We moved off `rest_framework.authtoken` and onto `rest_framework_simplejwt`, then moved again from returning tokens in the JSON body to setting them as `httponly` cookies. We did this so the frontend never handles raw JWTs in JS (no XSS-based token theft via localStorage) and so `Authorization` header plumbing disappears entirely — the browser just sends the cookies automatically.
 
-Any authenticated request needs the header:
-```
-Authorization: Bearer <access token>
-```
+`DEFAULT_AUTHENTICATION_CLASSES` is now `auth_user_app.authentication.CookieJWTAuthentication`, a custom class (not simplejwt's default `JWTAuthentication`) that reads the access token from the `access_token` cookie instead of an `Authorization` header, and enforces CSRF on every authenticated request (see below).
 
 Token lifetimes and rotation are configured via `SIMPLE_JWT` in settings.py:
-- Access token: 15 minutes
-- Refresh token: 7 days
-- `ROTATE_REFRESH_TOKENS` + `BLACKLIST_AFTER_ROTATION` are on, backed by `rest_framework_simplejwt.token_blacklist` — a used/rotated refresh token can't be reused, and logout blacklists it outright (see `logout/` below).
+- Access token: 15 minutes, cookie name `access_token`
+- Refresh token: 7 days, cookie name `refresh_token`
+- `ROTATE_REFRESH_TOKENS` + `BLACKLIST_AFTER_ROTATION` are on, backed by `rest_framework_simplejwt.token_blacklist` — a used/rotated refresh token can't be reused, and logout blacklists it outright.
 
-**Note for the team (frontend):** the response shape from `signup/`/`login/` changed from a single `token` to a pair — `access` and `refresh`. Store both. Send `access` as the `Authorization: Bearer` header on requests. When it expires (401), call `token/refresh/` with the `refresh` token to get a new `access` token. On logout, send the `refresh` token in the request body so it can be blacklisted server-side.
+**Note for the team (frontend):**
+- `signup/`, `login/`, `token/refresh/` no longer return `access`/`refresh` in the JSON body — tokens arrive as `Set-Cookie` headers instead. Response bodies now only carry `{ "client": <username> }` (or nothing, for refresh/logout).
+- Every request to the backend needs `credentials: "include"` (fetch) / `withCredentials: true` (axios), or the cookies won't be sent.
+- CSRF is now enforced on authenticated requests (via `CookieJWTAuthentication.enforce_csrf`). `login/` sets a `csrftoken` cookie (`ensure_csrf_cookie`) — read it and send it back as an `X-CSRFToken` header on every POST/PUT/PATCH/DELETE (e.g. `logout/`), or you'll get a `403`.
+- To log out client-side, just call `logout/` — no need to track or send the refresh token yourself anymore, it's read from the cookie.
+
+**Note for the team (backend):** cookie names (`access_token`, `refresh_token`) are currently hardcoded string literals in `authentication.py` and `views.py` (the `add_tokens_to_cookie`/`clear_auth_cookies` helpers) rather than settings constants — keep them in sync if you touch either file. `AUTH_COOKIE_SECURE`/`AUTH_COOKIE_SAMESITE` (settings.py) control cookie flags per environment; `AUTH_COOKIE_SECURE` must be `True` in production (HTTPS only).
 
 ### Endpoints
 
@@ -44,17 +49,18 @@ Base path: `/api/v1/users/` (`tripsync_proj/urls.py` -> `auth_user_app.urls`). E
 
 | Method | Path      | View      | Auth required | Notes |
 |--------|-----------|-----------|----------------|-------|
-| POST   | `/api/v1/users/signup/` | `Sign_Up` | No             | Creates user, returns `{ "client": <username>, "access": <token>, "refresh": <token> }`. Validates `username`/`email` via `AuthUserSerializer` first — bad input returns `400` with field errors. |
-| POST   | `/api/v1/users/login/`  | `Log_in`  | No             | Body: `username`, `password`. Returns `{ "client": <username>, "access": <token>, "refresh": <token> }` on success, `401` on bad credentials. |
-| POST   | `/api/v1/users/logout/` | `Log_out` | Yes            | Body: `{ "refresh": <token> }`. Blacklists that refresh token, returns `204`. Returns `400` if the token is missing/invalid/expired. Note: the caller's *access* token stays technically valid until it naturally expires (JWTs can't be revoked early) — only the refresh token is blacklisted, which stops new access tokens from being minted. |
+| POST   | `/api/v1/users/signup/` | `Sign_Up` | No             | Creates user, sets `access_token`/`refresh_token` cookies, returns `{ "client": <username> }`. Validates `username`/`email` via `AuthUserSerializer` first — bad input returns `400` with field errors. |
+| POST   | `/api/v1/users/login/`  | `Log_in`  | No             | Body: `username`, `password`. Sets `access_token`/`refresh_token` cookies + `csrftoken` cookie, returns `{ "client": <username> }` on success, `401` on bad credentials. |
+| POST   | `/api/v1/users/logout/` | `Log_out` | Yes            | No body needed — reads `refresh_token` cookie, blacklists it, clears both auth cookies, returns `204` regardless of outcome. Requires `X-CSRFToken` header. |
 | GET    | `/api/v1/users/info/`   | `Info`    | Yes            | Returns serialized `AuthUserSerializer` data for the requesting user. |
-| POST   | `/api/v1/users/token/refresh/` | `TokenRefreshView` (simplejwt built-in) | No (requires valid refresh token in body) | Body: `{ "refresh": <token> }`. Returns a new `access` token (and a new `refresh` token, since rotation is on). |
+| POST   | `/api/v1/users/token/refresh/` | `TokenRefresh` (custom) | No (requires valid `refresh_token` cookie) | Reads `refresh_token` cookie, sets new rotated `access_token`/`refresh_token` cookies, `401` if missing/invalid. |
 
 `AuthUserSerializer` (`serializers.py`) exposes `id`, `username`, `email` (`id` read-only).
 
 ## Created User Tests
-Inside of our "tripsync_proj", youll find a "tests" directory with a backend test. 
-Next step is CI/CD so it runs on pull requests
+Inside of our "tripsync_proj", youll find a "tests" directory with a backend test.
+
+**Note for the team (backend):** `tests/test_auth_user_views.py` was written against the header-based JWT flow (`Authorization: Bearer` + JSON `access`/`refresh` bodies) and is now stale after the cookie migration above — it needs a rewrite to authenticate via cookies before it'll pass again.
 
 ## Created Simple CI/CD
 When doing pull requests to backend or dev branches, all tests in 
