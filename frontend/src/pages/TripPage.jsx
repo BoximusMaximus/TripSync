@@ -298,6 +298,36 @@ export default function TripPage() {
     }
   };
 
+
+  const handleVoteActivity = async (activity) => {
+    setBusyActivityId(activity.id);
+    setFormError("");
+
+    try {
+      // if (activity.has_voted) {
+      //   await api.delete(`activities/${activity.id}/vote/`);
+      // } else {
+      //   await api.post(`activities/${activity.id}/vote/`);
+      // }
+      const updatedActivity = {
+        ...activity,
+        has_voted: !activity.has_voted,
+        vote_count: activity.has_voted
+          ? activity.vote_count - 1
+          : activity.vote_count + 1,
+      };
+      setActivities(
+        activities.map((item) =>
+          item.id === activity.id ? updatedActivity : item,
+        ),
+      );
+    } catch (err) {
+      setFormError("Could not update vote.");
+    } finally {
+      setBusyActivityId(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className={tripDetailPageClass}>
@@ -538,6 +568,7 @@ export default function TripPage() {
               onSaveClick={() => handleSaveActivity(activity.id)}
               onCancelClick={handleCancelEdit}
               onDeleteClick={() => handleDeleteActivity(activity.id)}
+              onVoteClick={() => handleVoteActivity(activity)}
               busy={activity.id === busyActivityId}
             />
           ))}
