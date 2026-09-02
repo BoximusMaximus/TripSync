@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     "tripsync_proj",
     "activities_app",
     "auth_user_app",
+    "trip_app",
 ]
 
 MIDDLEWARE = [
