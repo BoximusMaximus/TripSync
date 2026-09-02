@@ -279,3 +279,9 @@ export const activitySaveClass =
 
 export const activityCancelClass =
   "text-[13px] text-gray-600 cursor-pointer hover:underline disabled:opacity-50 disabled:cursor-not-allowed";
+
+// Trips page group section styling
+export const tripsSectionClass = "mb-8";
+
+export const tripsSectionTitleClass =
+  "mb-3 text-lg font-semibold text-[#1a1a1a]";

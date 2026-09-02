@@ -10,6 +10,8 @@ import {
   tripsSubtitleClass,
   tripsNewButtonClass,
   tripsGridClass,
+  tripsSectionClass,
+  tripsSectionTitleClass,
   tripsStatusClass,
   tripsErrorClass,
   tripsFooterNoteClass,
@@ -100,6 +102,20 @@ export default function TripsPage() {
       setSubmitting(false);
     }
   };
+
+  const groupedTrips = trips.reduce((sections, trip) => {
+    const section = sections.find((item) => item.group_id === trip.group_id);
+    if (section) {
+      section.trips.push(trip);
+    } else {
+      sections.push({
+        group_id: trip.group_id,
+        group_name: trip.group_name,
+        trips: [trip],
+      });
+    }
+    return sections;
+  }, []);
 
   const handleVoteTrip = async (trip) => {
     setBusyTripId(trip.id);
@@ -263,18 +279,23 @@ export default function TripsPage() {
         <p className={tripsStatusClass}>No trips yet.</p>
       )}
 
-      {!loading && !error && trips.length > 0 && (
-        <div className={tripsGridClass}>
-          {trips.map((trip) => (
-            <TripCard
-              key={trip.id}
-              trip={trip}
-              onVoteClick={() => handleVoteTrip(trip)}
-              busy={busyTripId === trip.id}
-            />
-          ))}
-        </div>
-      )}
+      {!loading &&
+        !error &&
+        groupedTrips.map((section) => (
+          <section key={section.group_id} className={tripsSectionClass}>
+            <h2 className={tripsSectionTitleClass}>{section.group_name}</h2>
+            <div className={tripsGridClass}>
+              {section.trips.map((trip) => (
+                <TripCard
+                  key={trip.id}
+                  trip={trip}
+                  onVoteClick={() => handleVoteTrip(trip)}
+                  busy={busyTripId === trip.id}
+                />
+              ))}
+            </div>
+          </section>
+        ))}
 
       <p className={tripsFooterNoteClass}>
         activities per trip are view-only here · Details → Trip Detail /
