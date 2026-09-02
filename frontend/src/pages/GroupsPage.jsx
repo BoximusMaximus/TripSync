@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../utilities";
-import { mockGroups mockMembers} from "../mockData";
+import { mockGroups, mockMembers} from "../mockData";
 import GroupCard from "../components/GroupCard/GroupCard";
 
 import {

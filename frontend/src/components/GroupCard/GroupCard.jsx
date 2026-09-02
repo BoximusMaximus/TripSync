@@ -58,8 +58,6 @@ export default function GroupCard({
                     View
                 </button>
             </div>
-            </div>
-
             {expanded && (
                 <div className={groupMembersWrapClass}>
                     <p className={groupMembersTitleClass}>Members</p>
