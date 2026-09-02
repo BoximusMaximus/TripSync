@@ -56,6 +56,17 @@ const flattenPlace = (place) => {
   };
 };
 
+const emptyActivity = {
+  name: "",
+  description: "",
+  street: "",
+  city: "",
+  state: "",
+  zip: "",
+  country: "",
+  cost: "",
+};
+
 export default function TripPage() {
   const { tripId } = useParams();
 
@@ -68,13 +79,10 @@ export default function TripPage() {
   const [placeResults, setPlaceResults] = useState([]);
   const [placesLoading, setPlacesLoading] = useState(false);
   const [selectedPlace, setSelectedPlace] = useState(null);
-  const [newActivity, setNewActivity] = useState({
-    name: "",
-    description: "",
-    cost: "",
-  });
+  const [newActivity, setNewActivity] = useState(emptyActivity);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
+  const [manualAddress, setManualAddress] = useState(false);
 
   const loadTrip = async () => {
     setLoading(true);
@@ -107,7 +115,8 @@ export default function TripPage() {
     setPlaceQuery("");
     setPlaceResults([]);
     setSelectedPlace(null);
-    setNewActivity({ name: "", description: "", cost: "" });
+    setNewActivity(emptyActivity);
+    setManualAddress(false);
     setFormError("");
   };
 
@@ -155,10 +164,22 @@ export default function TripPage() {
     });
   };
 
+  const handleToggleManual = () => {
+    setManualAddress(!manualAddress);
+    setPlaceQuery("");
+    setPlaceResults([]);
+    setSelectedPlace(null);
+    setFormError("");
+  };
+
   const handleAddActivity = async (event) => {
     event.preventDefault();
 
-    if (!selectedPlace || newActivity.name.trim() === "") {
+    if (newActivity.name.trim() === "") {
+      return;
+    }
+
+    if (!manualAddress && !selectedPlace) {
       return;
     }
 
@@ -168,12 +189,12 @@ export default function TripPage() {
     const payload = {
       name: newActivity.name,
       description: newActivity.description,
-      street: selectedPlace.street,
-      city: selectedPlace.city,
-      state: selectedPlace.state,
-      zip: selectedPlace.zip,
-      country: selectedPlace.country,
-      place_id: selectedPlace.place_id,
+      street: manualAddress ? newActivity.street : selectedPlace.street,
+      city: manualAddress ? newActivity.city : selectedPlace.city,
+      state: manualAddress ? newActivity.state : selectedPlace.state,
+      zip: manualAddress ? newActivity.zip : selectedPlace.zip,
+      country: manualAddress ? newActivity.country : selectedPlace.country,
+      place_id: manualAddress ? "" : selectedPlace.place_id,
       cost_estimate_cents: Math.round(Number(newActivity.cost || 0) * 100),
     };
 
@@ -244,6 +265,7 @@ export default function TripPage() {
 
       {showAddForm && (
         <div className={tripFormClass}>
+          {!manualAddress && (
           <form className={tripFormRowClass} onSubmit={searchPlaces}>
             <label className={tripFormFieldClass}>
               Find a place
@@ -263,6 +285,7 @@ export default function TripPage() {
               {placesLoading ? "Searching..." : "Search"}
             </button>
           </form>
+          )}
 
           {placeResults.length > 0 && (
             <div className={placesResultsClass}>
@@ -287,7 +310,15 @@ export default function TripPage() {
               {selectedPlace.name} · {selectedPlace.formatted_address}
             </p>
           )}
-
+          <button
+            className={tripFormCancelClass}
+            type="button"
+            onClick={handleToggleManual}
+          >
+            {manualAddress
+              ? "Search Google Places instead"
+              : "Enter address manually"}
+          </button>
           <form className={tripFormRowClass} onSubmit={handleAddActivity}>
             <label className={tripFormFieldClass}>
               Name
@@ -314,6 +345,65 @@ export default function TripPage() {
                 }
               />
             </label>
+                        {manualAddress && (
+              <>
+                <label className={tripFormFieldClass}>
+                  Street
+                  <input
+                    className={tripFormInputClass}
+                    type="text"
+                    value={newActivity.street}
+                    onChange={(event) =>
+                      setNewActivity({ ...newActivity, street: event.target.value })
+                    }
+                  />
+                </label>
+                <label className={tripFormFieldClass}>
+                  City
+                  <input
+                    className={tripFormInputClass}
+                    type="text"
+                    value={newActivity.city}
+                    onChange={(event) =>
+                      setNewActivity({ ...newActivity, city: event.target.value })
+                    }
+                  />
+                </label>
+                <label className={tripFormFieldClass}>
+                  State
+                  <input
+                    className={tripFormInputClass}
+                    type="text"
+                    value={newActivity.state}
+                    onChange={(event) =>
+                      setNewActivity({ ...newActivity, state: event.target.value })
+                    }
+                  />
+                </label>
+                <label className={tripFormFieldClass}>
+                  Zip
+                  <input
+                    className={tripFormInputClass}
+                    type="text"
+                    value={newActivity.zip}
+                    onChange={(event) =>
+                      setNewActivity({ ...newActivity, zip: event.target.value })
+                    }
+                  />
+                </label>
+                <label className={tripFormFieldClass}>
+                  Country
+                  <input
+                    className={tripFormInputClass}
+                    type="text"
+                    value={newActivity.country}
+                    onChange={(event) =>
+                      setNewActivity({ ...newActivity, country: event.target.value })
+                    }
+                  />
+                </label>
+              </>
+            )}
             <label className={tripFormFieldClass}>
               Cost ($)
               <input
@@ -330,7 +420,7 @@ export default function TripPage() {
             <button
               className={tripFormSubmitClass}
               type="submit"
-              disabled={submitting || !selectedPlace}
+              disabled={submitting || (!manualAddress && !selectedPlace)}
             >
               {submitting ? "Saving..." : "Save Activity"}
             </button>
