@@ -2,7 +2,7 @@
 
 A collaborative travel-planning app for groups. Members join a travel group and **vote** on which trip to take and which activities to do — itinerary, activities, and costs in one place.
 
-**Team 2 · Code Platoon (Dakota cohort)** — Cody · Dom · Kaylee · Mohamed · Simon · Abdel ·
+**Team 2 · Code Platoon (Dakota cohort)** — Cody · Dom · Kaylee · Mohamed · Simon · Abdel
 
 ## Start here
 
