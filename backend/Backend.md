@@ -55,7 +55,3 @@ Base path: `/api/v1/users/` (`tripsync_proj/urls.py` -> `auth_user_app.urls`). E
 ## Created User Tests
 Inside of our "tripsync_proj", youll find a "tests" directory with a backend test. 
 Next step is CI/CD so it runs on pull requests
-
-
-
-
