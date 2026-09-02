@@ -52,10 +52,10 @@ const LoginPage = () => {
       <div className={authCardClass}>
         <nav className={authNavClass}>
           <Link
-            to="/login"
+            to="/"
             className={clsx(
               authTabClass,
-              location.pathname === "/login"
+              location.pathname === "/"
                 ? authTabActiveClass
                 : authTabInactiveClass,
             )}
