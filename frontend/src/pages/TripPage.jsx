@@ -275,6 +275,29 @@ export default function TripPage() {
     }
   };
 
+  const handleDeleteActivity = async (activityId) => {
+    if (!window.confirm("Delete this activity?")) {
+      return;
+    }
+
+    setBusyActivityId(activityId);
+    setFormError("");
+
+    try {
+      // await api.delete(`activities/${activityId}/`);
+      setActivities(
+        activities.filter((activity) => activity.id !== activityId),
+      );
+      if (editingActivityId === activityId) {
+        setEditingActivityId(null);
+      }
+    } catch (err) {
+      setFormError("Could not delete activity.");
+    } finally {
+      setBusyActivityId(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className={tripDetailPageClass}>
@@ -514,6 +537,7 @@ export default function TripPage() {
               onEditClick={() => handleEditClick(activity)}
               onSaveClick={() => handleSaveActivity(activity.id)}
               onCancelClick={handleCancelEdit}
+              onDeleteClick={() => handleDeleteActivity(activity.id)}
               busy={activity.id === busyActivityId}
             />
           ))}
