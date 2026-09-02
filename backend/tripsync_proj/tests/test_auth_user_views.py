@@ -3,7 +3,7 @@ from unittest.mock import patch
 from django.contrib.auth import get_user_model
 from django.urls import reverse, reverse_lazy
 from rest_framework import status
-from rest_framework.test import APITestCase
+from rest_framework.test import APIClient, APITestCase
 from rest_framework_simplejwt.tokens import RefreshToken
 
 Auth_User = get_user_model()
@@ -23,8 +23,6 @@ class UnthrottledAPITestCase(APITestCase):
     (ours or simplejwt's built-in TokenRefreshView). Patching the throttle
     check itself is what actually disables it.
     """
-    # ^ What the AI is TRYING to say is: The test dont work because we have 
-    # throttling enabled so it did some black magic (below) to bypass the throttle
 
     def setUp(self):
         super().setUp()
@@ -39,7 +37,7 @@ class UnthrottledAPITestCase(APITestCase):
 class SignUpTests(UnthrottledAPITestCase):
     url = reverse_lazy("signup")
 
-    def test_signup_creates_user_and_returns_tokens(self):
+    def test_signup_creates_user_and_sets_auth_cookies(self):
         response = self.client.post(
             self.url,
             {
@@ -50,9 +48,12 @@ class SignUpTests(UnthrottledAPITestCase):
         )
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(response.data["client"], "new_user")
-        self.assertIn("access", response.data)
-        self.assertIn("refresh", response.data)
+        self.assertEqual(response.data, {"client": "new_user"})
+
+        self.assertIn("access_token", response.cookies)
+        self.assertIn("refresh_token", response.cookies)
+        self.assertTrue(response.cookies["access_token"]["httponly"])
+        self.assertTrue(response.cookies["refresh_token"]["httponly"])
 
         user = Auth_User.objects.get(username="new_user")
         self.assertEqual(user.email, "new_user@example.com")
@@ -71,6 +72,7 @@ class SignUpTests(UnthrottledAPITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("username", response.data)
         self.assertFalse(Auth_User.objects.filter(email="new_user@example.com").exists())
+        self.assertNotIn("access_token", response.cookies)
 
     def test_signup_rejects_invalid_email(self):
         response = self.client.post(
@@ -135,16 +137,23 @@ class LogInTests(UnthrottledAPITestCase):
             password="a-strong-password-1",
         )
 
-    def test_login_with_correct_credentials_returns_tokens(self):
+    def test_login_with_correct_credentials_sets_auth_cookies(self):
         response = self.client.post(
             self.url,
             {"username": "existing_user", "password": "a-strong-password-1"},
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["client"], "existing_user")
-        self.assertIn("access", response.data)
-        self.assertIn("refresh", response.data)
+        self.assertEqual(response.data, {"client": "existing_user"})
+
+        self.assertIn("access_token", response.cookies)
+        self.assertIn("refresh_token", response.cookies)
+        self.assertTrue(response.cookies["access_token"]["httponly"])
+        self.assertTrue(response.cookies["refresh_token"]["httponly"])
+
+        # login is decorated with ensure_csrf_cookie so the frontend has
+        # something to read and echo back as X-CSRFToken on later writes.
+        self.assertIn("csrftoken", response.cookies)
 
     def test_login_with_wrong_password_is_unauthorized(self):
         response = self.client.post(
@@ -153,6 +162,7 @@ class LogInTests(UnthrottledAPITestCase):
         )
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertNotIn("access_token", response.cookies)
 
     def test_login_with_unknown_username_is_unauthorized(self):
         response = self.client.post(
@@ -176,7 +186,7 @@ class InfoTests(UnthrottledAPITestCase):
 
     def _authenticate(self):
         access = RefreshToken.for_user(self.user).access_token
-        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access}")
+        self.client.cookies["access_token"] = str(access)
 
     def test_info_requires_authentication(self):
         response = self.client.get(self.url)
@@ -207,40 +217,75 @@ class LogOutTests(UnthrottledAPITestCase):
 
     def _authenticate(self):
         refresh = RefreshToken.for_user(self.user)
-        access = refresh.access_token
-        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access}")
+        self.client.cookies["access_token"] = str(refresh.access_token)
+        self.client.cookies["refresh_token"] = str(refresh)
         return refresh
 
     def test_logout_requires_authentication(self):
-        response = self.client.post(self.url, {"refresh": "irrelevant"})
+        response = self.client.post(self.url)
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-    def test_logout_without_refresh_token_is_bad_request(self):
-        self._authenticate()
+    def test_logout_without_refresh_cookie_is_bad_request(self):
+        refresh = RefreshToken.for_user(self.user)
+        self.client.cookies["access_token"] = str(refresh.access_token)
 
-        response = self.client.post(self.url, {})
+        response = self.client.post(self.url)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        # Cookies are cleared on every path, including this failure one.
+        self.assertEqual(response.cookies["access_token"]["max-age"], 0)
+        self.assertEqual(response.cookies["refresh_token"]["max-age"], 0)
+
+    def test_logout_with_invalid_refresh_cookie_is_bad_request(self):
+        refresh = RefreshToken.for_user(self.user)
+        self.client.cookies["access_token"] = str(refresh.access_token)
+        self.client.cookies["refresh_token"] = "not-a-real-token"
+
+        response = self.client.post(self.url)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_logout_with_invalid_refresh_token_is_bad_request(self):
-        self._authenticate()
-
-        response = self.client.post(self.url, {"refresh": "not-a-real-token"})
-
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-    def test_logout_blacklists_refresh_token(self):
+    def test_logout_blacklists_refresh_token_and_clears_cookies(self):
         refresh = self._authenticate()
 
-        response = self.client.post(self.url, {"refresh": str(refresh)})
+        response = self.client.post(self.url)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(response.cookies["access_token"]["max-age"], 0)
+        self.assertEqual(response.cookies["refresh_token"]["max-age"], 0)
 
         # The blacklisted refresh token can no longer be used to get a new access token.
-        refresh_response = self.client.post(
-            reverse("token_refresh"), {"refresh": str(refresh)}
-        )
+        refresh_client = APIClient()
+        refresh_client.cookies["refresh_token"] = str(refresh)
+        refresh_response = refresh_client.post(reverse("token_refresh"))
         self.assertEqual(refresh_response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class LogOutCsrfTests(UnthrottledAPITestCase):
+    """
+    CookieJWTAuthentication.enforce_csrf runs Django's real CSRF check, but
+    APIClient defaults to enforce_csrf_checks=False (same as Django's own
+    test Client), which bypasses it. These tests turn that back on to prove
+    the CSRF gate itself actually works, since none of the other tests
+    exercise it.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.client = APIClient(enforce_csrf_checks=True)
+        self.user = Auth_User.objects.create_user(
+            username="existing_user",
+            email="existing_user@example.com",
+            password="a-strong-password-1",
+        )
+        refresh = RefreshToken.for_user(self.user)
+        self.client.cookies["access_token"] = str(refresh.access_token)
+        self.client.cookies["refresh_token"] = str(refresh)
+
+    def test_logout_without_csrf_token_is_forbidden(self):
+        response = self.client.post(reverse("logout"))
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
 
 class TokenRefreshTests(UnthrottledAPITestCase):
@@ -254,15 +299,24 @@ class TokenRefreshTests(UnthrottledAPITestCase):
             password="a-strong-password-1",
         )
 
-    def test_refresh_with_valid_token_returns_new_access_token(self):
+    def test_refresh_with_valid_cookie_sets_new_auth_cookies(self):
         refresh = RefreshToken.for_user(self.user)
+        self.client.cookies["refresh_token"] = str(refresh)
 
-        response = self.client.post(self.url, {"refresh": str(refresh)})
+        response = self.client.post(self.url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn("access", response.data)
+        self.assertIn("access_token", response.cookies)
+        self.assertIn("refresh_token", response.cookies)
 
-    def test_refresh_with_invalid_token_is_unauthorized(self):
-        response = self.client.post(self.url, {"refresh": "not-a-real-token"})
+    def test_refresh_without_cookie_is_unauthorized(self):
+        response = self.client.post(self.url)
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_refresh_with_invalid_cookie_is_unauthorized(self):
+        self.client.cookies["refresh_token"] = "not-a-real-token"
+
+        response = self.client.post(self.url)
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)

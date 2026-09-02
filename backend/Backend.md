@@ -60,11 +60,16 @@ Base path: `/api/v1/users/` (`tripsync_proj/urls.py` -> `auth_user_app.urls`). E
 ## Created User Tests
 Inside of our "tripsync_proj", youll find a "tests" directory with a backend test.
 
-**Note for the team (backend):** `tests/test_auth_user_views.py` was written against the header-based JWT flow (`Authorization: Bearer` + JSON `access`/`refresh` bodies) and is now stale after the cookie migration above — it needs a rewrite to authenticate via cookies before it'll pass again.
 
 ## Created Simple CI/CD
 When doing pull requests to backend or dev branches, all tests in 
 `backend/tripsync_proj/tests` will run 
+
+## Fixed JWT Cookie Auth
+Claude (sadly) helped me create cookie based auth for JWT on the backend. Sorry
+Mohamed.
+
+I also updated the backend tests to utilize the new auth
 
 
 
