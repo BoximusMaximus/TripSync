@@ -1,6 +1,13 @@
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import {
+  Link,
+  useLocation,
+  useNavigate,
+  useOutletContext,
+} from "react-router-dom";
 import clsx from "clsx";
+
+import { logIn } from "../services/account";
 
 import {
   authPageClass,
@@ -21,8 +28,10 @@ import {
 
 const LoginPage = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { setUser } = useOutletContext();
 
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -34,11 +43,15 @@ const LoginPage = () => {
     setIsSubmitting(true);
 
     try {
-      // Add login API call here.
-      console.log({
-        email,
-        password,
-      });
+      const result = await logIn(username, password);
+
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+
+      setUser(result.user);
+      navigate("/home");
     } catch (error) {
       console.error(error);
       setError("Unable to log in.");
@@ -89,18 +102,18 @@ const LoginPage = () => {
             noValidate
           >
             <label className={authFieldClass}>
-              <span>Email</span>
+              <span>Username</span>
 
               <input
                 className={authInputClass}
-                type="email"
-                name="email"
-                placeholder="you@example.com"
-                value={email}
+                type="text"
+                name="username"
+                placeholder="Username"
+                value={username}
                 onChange={(event) =>
-                  setEmail(event.target.value)
+                  setUsername(event.target.value)
                 }
-                autoComplete="email"
+                autoComplete="username"
                 required
               />
             </label>
