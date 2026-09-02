@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import api from "../utilities";
 import ActivityCard from "../components/ActivityCard/ActivityCard";
-import { mockTrips, mockActivities } from "../fixture/mockData";
+import { mockTrips, mockActivities, mockPlaces } from "../fixture/mockData";
 import {
   tripDetailPageClass,
   tripDetailHeaderClass,
@@ -18,7 +18,43 @@ import {
   tripDetailMapNoteClass,
   tripDetailStatusClass,
   tripDetailErrorClass,
+  tripFormClass,
+  tripFormRowClass,
+  tripFormFieldClass,
+  tripFormInputClass,
+  tripFormSubmitClass,
+  tripFormCancelClass,
+  placesResultsClass,
+  placesResultButtonClass,
+  placesResultAddressClass,
+  placesSelectedClass,
 } from "./styles/tailwindStyles";
+
+
+const componentText = (components, type, field) => {
+  const match = components.find((component) => component.types.includes(type));
+  return match ? match[field] : "";
+};
+
+// Google Places (New) returns addressComponents as [{ longText, shortText, types }].
+// street_number + route -> street, locality -> city,
+// administrative_area_level_1 -> state, postal_code -> zip, country -> country.
+const flattenPlace = (place) => {
+  const components = place.addressComponents || [];
+  const streetNumber = componentText(components, "street_number", "shortText");
+  const route = componentText(components, "route", "shortText");
+
+  return {
+    place_id: place.id,
+    name: place.displayName.text,
+    formatted_address: place.formattedAddress,
+    street: `${streetNumber} ${route}`.trim(),
+    city: componentText(components, "locality", "longText"),
+    state: componentText(components, "administrative_area_level_1", "shortText"),
+    zip: componentText(components, "postal_code", "longText"),
+    country: componentText(components, "country", "longText"),
+  };
+};
 
 export default function TripPage() {
   const { tripId } = useParams();
@@ -27,6 +63,18 @@ export default function TripPage() {
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [placeQuery, setPlaceQuery] = useState("");
+  const [placeResults, setPlaceResults] = useState([]);
+  const [placesLoading, setPlacesLoading] = useState(false);
+  const [selectedPlace, setSelectedPlace] = useState(null);
+  const [newActivity, setNewActivity] = useState({
+    name: "",
+    description: "",
+    cost: "",
+  });
+  const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState("");
 
   const loadTrip = async () => {
     setLoading(true);
@@ -52,6 +100,101 @@ export default function TripPage() {
   useEffect(() => {
     loadTrip();
   }, [tripId]);
+
+
+  const resetAddForm = () => {
+    setShowAddForm(false);
+    setPlaceQuery("");
+    setPlaceResults([]);
+    setSelectedPlace(null);
+    setNewActivity({ name: "", description: "", cost: "" });
+    setFormError("");
+  };
+
+  const searchPlaces = async (event) => {
+    event.preventDefault();
+
+    if (placeQuery.trim() === "") {
+      return;
+    }
+
+    setPlacesLoading(true);
+    setFormError("");
+
+    try {
+      // const response = await fetch(
+      //   "https://places.googleapis.com/v1/places:searchText",
+      //   {
+      //     method: "POST",
+      //     headers: {
+      //       "Content-Type": "application/json",
+      //       "X-Goog-Api-Key": import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
+      //       "X-Goog-FieldMask":
+      //         "places.id,places.displayName,places.formattedAddress,places.addressComponents",
+      //     },
+      //     body: JSON.stringify({ textQuery: placeQuery, maxResultCount: 5 }),
+      //   },
+      // );
+      // const data = await response.json();
+      // setPlaceResults((data.places || []).map(flattenPlace));
+      setPlaceResults(mockPlaces.map(flattenPlace));
+      setSelectedPlace(null);
+    } catch (err) {
+      setFormError("Could not search places.");
+    } finally {
+      setPlacesLoading(false);
+    }
+  };
+
+  const handleSelectPlace = (place) => {
+    setSelectedPlace(place);
+    setPlaceResults([]);
+    setNewActivity({
+      ...newActivity,
+      name: newActivity.name.trim() === "" ? place.name : newActivity.name,
+    });
+  };
+
+  const handleAddActivity = async (event) => {
+    event.preventDefault();
+
+    if (!selectedPlace || newActivity.name.trim() === "") {
+      return;
+    }
+
+    setSubmitting(true);
+    setFormError("");
+
+    const payload = {
+      name: newActivity.name,
+      description: newActivity.description,
+      street: selectedPlace.street,
+      city: selectedPlace.city,
+      state: selectedPlace.state,
+      zip: selectedPlace.zip,
+      country: selectedPlace.country,
+      place_id: selectedPlace.place_id,
+      cost_estimate_cents: Math.round(Number(newActivity.cost || 0) * 100),
+    };
+
+    try {
+      // const response = await api.post(`trips/${tripId}/activities/`, payload);
+      // setActivities([...activities, response.data]);
+      const fakeActivity = {
+        id: Date.now(),
+        trip_id: Number(tripId),
+        ...payload,
+        vote_count: 0,
+        has_voted: false,
+      };
+      setActivities([...activities, fakeActivity]);
+      resetAddForm();
+    } catch (err) {
+      setFormError("Could not add activity.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -90,10 +233,119 @@ export default function TripPage() {
 
         <div className={tripDetailActionsClass}>
           <button className={tripDetailEditButtonClass}>Edit Trip</button>
-          <button className={tripDetailAddButtonClass}>+ Add Activity</button>
+          <button
+            className={tripDetailAddButtonClass}
+            onClick={() => (showAddForm ? resetAddForm() : setShowAddForm(true))}
+          >
+            + Add Activity
+          </button>
         </div>
       </div>
 
+      {showAddForm && (
+        <div className={tripFormClass}>
+          <form className={tripFormRowClass} onSubmit={searchPlaces}>
+            <label className={tripFormFieldClass}>
+              Find a place
+              <input
+                className={tripFormInputClass}
+                type="text"
+                value={placeQuery}
+                onChange={(event) => setPlaceQuery(event.target.value)}
+                placeholder="Search Google Places"
+              />
+            </label>
+            <button
+              className={tripFormSubmitClass}
+              type="submit"
+              disabled={placesLoading}
+            >
+              {placesLoading ? "Searching..." : "Search"}
+            </button>
+          </form>
+
+          {placeResults.length > 0 && (
+            <div className={placesResultsClass}>
+              {placeResults.map((place) => (
+                <button
+                  key={place.place_id}
+                  className={placesResultButtonClass}
+                  type="button"
+                  onClick={() => handleSelectPlace(place)}
+                >
+                  {place.name}
+                  <span className={placesResultAddressClass}>
+                    {place.formatted_address}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {selectedPlace && (
+            <p className={placesSelectedClass}>
+              {selectedPlace.name} · {selectedPlace.formatted_address}
+            </p>
+          )}
+
+          <form className={tripFormRowClass} onSubmit={handleAddActivity}>
+            <label className={tripFormFieldClass}>
+              Name
+              <input
+                className={tripFormInputClass}
+                type="text"
+                value={newActivity.name}
+                onChange={(event) =>
+                  setNewActivity({ ...newActivity, name: event.target.value })
+                }
+              />
+            </label>
+            <label className={tripFormFieldClass}>
+              Description
+              <input
+                className={tripFormInputClass}
+                type="text"
+                value={newActivity.description}
+                onChange={(event) =>
+                  setNewActivity({
+                    ...newActivity,
+                    description: event.target.value,
+                  })
+                }
+              />
+            </label>
+            <label className={tripFormFieldClass}>
+              Cost ($)
+              <input
+                className={tripFormInputClass}
+                type="number"
+                min="0"
+                step="0.01"
+                value={newActivity.cost}
+                onChange={(event) =>
+                  setNewActivity({ ...newActivity, cost: event.target.value })
+                }
+              />
+            </label>
+            <button
+              className={tripFormSubmitClass}
+              type="submit"
+              disabled={submitting || !selectedPlace}
+            >
+              {submitting ? "Saving..." : "Save Activity"}
+            </button>
+            <button
+              className={tripFormCancelClass}
+              type="button"
+              onClick={resetAddForm}
+            >
+              Cancel
+            </button>
+          </form>
+
+          {formError && <p className={tripDetailErrorClass}>{formError}</p>}
+        </div>
+      )}
       <div className={tripDetailColumnsClass}>
         <div className={tripDetailLeftClass}>
           {activities.length === 0 && (

@@ -246,6 +246,18 @@ export const activityEditClass =
 
 export const activityDeleteClass =
   "text-[13px] text-red-600 cursor-pointer hover:underline disabled:opacity-50 disabled:cursor-not-allowed";
+
+// Add Activity / Places search styling
+export const placesResultsClass = "mt-3 flex flex-col gap-2";
+
+export const placesResultButtonClass =
+  "text-left text-sm px-3 py-2 border border-gray-200 rounded-md bg-white cursor-pointer hover:border-[#0f7173]";
+
+export const placesResultAddressClass = "block text-[13px] text-gray-500";
+
+export const placesSelectedClass =
+  "mt-3 rounded-md border border-[#0f7173]/30 bg-[#f6fbfb] px-3 py-2 text-sm text-[#1a1a1a]";
+
 export const notFoundHeader =
   "m-0 text-8xl font-bold text-[var(--accent)]";
 
