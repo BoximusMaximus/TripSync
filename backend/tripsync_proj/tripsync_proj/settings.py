@@ -46,7 +46,8 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
     "tripsync_proj",
-    "activities_app"
+    "activities_app",
+    "auth_user_app",
 ]
 
 MIDDLEWARE = [
@@ -132,9 +133,9 @@ CACHES = {
 }
 
 REST_FRAMEWORK = {
-    # "DEFAULT_AUTHENTICATION_CLASSES": [
-    #     "user_app.authentication.JWTCookieAuthentication",
-    # ],
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ],
     "DEFAULT_THROTTLE_CLASSES": [
         "rest_framework.throttling.AnonRateThrottle",
         "rest_framework.throttling.UserRateThrottle",
@@ -147,6 +148,8 @@ REST_FRAMEWORK = {
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
+
+AUTH_USER_MODEL = "auth_user_app.Auth_User"
 
 AUTH_PASSWORD_VALIDATORS = [
     {
