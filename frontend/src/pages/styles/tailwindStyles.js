@@ -51,9 +51,9 @@ export const authFooterLinkClass =
   "text-[#0f7173] font-medium no-underline hover:underline";
 
 // GroupPage styling
-export const groupsPageClass = "px-8 py-6";
+export const groupsPageClass = "px-4 py-4 sm:px-8 sm:py-6";
 
-export const groupsHeaderClass = "flex items-center justify-between";
+export const groupsHeaderClass = "flex flex-wrap items-center justify-between gap-3";
 
 export const groupsTitleClass = "m-0 text-[28px] font-bold text-[#1a1a1a]";
 
@@ -141,9 +141,9 @@ export const tripDetailsLinkClass =
   "text-sm text-gray-600 no-underline hover:text-gray-900 hover:underline";
 
   // Trips Page styling
-export const tripsPageClass = "px-8 py-6";
+export const tripsPageClass = "px-4 py-4 sm:px-8 sm:py-6";
 
-export const tripsHeaderClass = "flex items-center justify-between";
+export const tripsHeaderClass = "flex flex-wrap items-center justify-between gap-3";
 
 export const tripsTitleClass = "m-0 text-[28px] font-bold text-[#1a1a1a]";
 
@@ -183,10 +183,10 @@ export const tripFormCancelClass =
   "px-4 py-2 text-sm text-gray-600 cursor-pointer hover:text-gray-900";
 
 // Trip Detail styling
-export const tripDetailPageClass = "px-8 py-6";
+export const tripDetailPageClass = "px-4 py-4 sm:px-8 sm:py-6";
 
 export const tripDetailHeaderClass =
-  "flex items-start justify-between gap-4";
+  "flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between";
 
 export const tripDetailTitleClass =
   "m-0 text-[28px] font-bold text-[#1a1a1a]";
