@@ -3,6 +3,7 @@ import App from "./App";
 import SignUpPage from "./pages/SignUpPage";
 import GroupsPage from "./pages/GroupsPage";
 import TripsPage from "./pages/TripsPage";
+import TripPage from "./pages/TripPage";
 
 const router = createBrowserRouter([
   {
@@ -20,6 +21,10 @@ const router = createBrowserRouter([
   {
     path: "/trips",
     element: <TripsPage />,
+  },
+  {
+    path: "/trips/:tripId",
+    element: <TripPage />,
   },
 ]);
 

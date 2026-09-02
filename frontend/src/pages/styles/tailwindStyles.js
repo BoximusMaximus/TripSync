@@ -164,3 +164,68 @@ export const tripFormSubmitClass =
 
 export const tripFormCancelClass =
   "px-4 py-2 text-sm text-gray-600 cursor-pointer hover:text-gray-900";
+
+// Trip Detail styling
+export const tripDetailPageClass = "px-8 py-6";
+
+export const tripDetailHeaderClass =
+  "flex items-start justify-between gap-4";
+
+export const tripDetailTitleClass =
+  "m-0 text-[28px] font-bold text-[#1a1a1a]";
+
+export const tripDetailLocationClass = "mt-1 text-sm text-gray-500";
+
+export const tripDetailActionsClass = "flex items-center gap-2";
+
+export const tripDetailEditButtonClass =
+  "px-4 py-2 text-sm border border-gray-400 rounded-md bg-white cursor-pointer hover:bg-gray-50";
+
+export const tripDetailAddButtonClass =
+  "px-4 py-2 text-sm font-semibold text-white bg-[#1a1a1a] rounded-md cursor-pointer hover:bg-black";
+
+export const tripDetailColumnsClass =
+  "mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[360px_1fr]";
+
+export const tripDetailLeftClass = "flex flex-col gap-3";
+
+export const tripDetailRightClass = "flex flex-col gap-2";
+
+export const tripDetailMapSlotClass =
+  "flex h-[440px] items-center justify-center rounded border border-gray-300 bg-gray-50 text-sm text-gray-400";
+
+export const tripDetailMapNoteClass = "text-[13px] text-gray-400";
+
+export const tripDetailStatusClass = "text-sm text-gray-500";
+
+export const tripDetailErrorClass = "text-sm text-red-600";
+
+// Activity Card styling
+export const activityCardClass =
+  "rounded-lg border border-gray-300 bg-white p-4";
+
+export const activityNameClass = "m-0 font-bold text-[#1a1a1a]";
+
+export const activityDescriptionClass = "mt-1 text-sm text-gray-600";
+
+export const activityAddressClass = "mt-1 text-[13px] text-gray-500";
+
+export const activityCostClass =
+  "mt-2 text-sm font-semibold text-[#1a1a1a]";
+
+export const activityActionsClass =
+  "mt-3 flex items-center justify-between";
+
+export const activityVoteButtonClass =
+  "flex items-center gap-1.5 rounded-full border border-gray-400 px-3 py-1 text-sm cursor-pointer hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed";
+
+export const activityVoteButtonOnClass =
+  "flex items-center gap-1.5 rounded-full border border-[#0f7173] bg-[#e6f5f5] px-3 py-1 text-sm text-[#0c5c5e] cursor-pointer hover:bg-[#d4eded] disabled:opacity-50 disabled:cursor-not-allowed";
+
+export const activityLinkActionsClass = "flex items-center gap-3";
+
+export const activityEditClass =
+  "text-[13px] text-gray-600 cursor-pointer hover:underline disabled:opacity-50 disabled:cursor-not-allowed";
+
+export const activityDeleteClass =
+  "text-[13px] text-red-600 cursor-pointer hover:underline disabled:opacity-50 disabled:cursor-not-allowed";
