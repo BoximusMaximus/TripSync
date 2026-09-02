@@ -1,9 +1,15 @@
-import { Link } from "react-router-dom";
 import { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import clsx from "clsx";
 
 import {
   authPageClass,
   authCardClass,
+  authNavClass,
+  authTabClass,
+  authTabActiveClass,
+  authTabInactiveClass,
+  authCardBodyClass,
   authTitleClass,
   authSubtitleClass,
   authFormClass,
@@ -12,17 +18,16 @@ import {
   authErrorClass,
   authSuccessClass,
   authSubmitClass,
-  authFooterClass,
-  authFooterLinkClass,
 } from "./styles/tailwindStyles";
 
-
 const SignUpPage = () => {
+  const location = useLocation();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -32,8 +37,7 @@ const SignUpPage = () => {
     setIsSubmitting(true);
 
     try {
-      // Add your signup API call here.
-
+      // Add signup API call here.
       console.log({
         email,
         password,
@@ -51,76 +55,103 @@ const SignUpPage = () => {
   return (
     <div className={authPageClass}>
       <div className={authCardClass}>
-        <h1 className={authTitleClass}>Sign up</h1>
+        <nav className={authNavClass}>
+          <Link
+            to="/"
+            className={clsx(
+              authTabClass,
+              location.pathname === "/"
+                ? authTabActiveClass
+                : authTabInactiveClass,
+            )}
+          >
+            Login
+          </Link>
 
-        <p className={authSubtitleClass}>
-          Create an account to start planning your trip.
-        </p>
+          <Link
+            to="/signup"
+            className={clsx(
+              authTabClass,
+              location.pathname === "/signup"
+                ? authTabActiveClass
+                : authTabInactiveClass,
+            )}
+          >
+            Signup
+          </Link>
+        </nav>
 
-        {success && (
-          <p className={authSuccessClass} role="status">
-            {success}
+        <div className={authCardBodyClass}>
+          <h1 className={authTitleClass}>
+            Create an account
+          </h1>
+
+          <p className={authSubtitleClass}>
+            Sign up to start planning your trip.
           </p>
-        )}
 
-        <form
-          className={authFormClass}
-          onSubmit={handleSubmit}
-          noValidate
-        >
-          <label className={authFieldClass}>
-            <span>Email</span>
-
-            <input
-              className={authInputClass}
-              type="email"
-              name="email"
-              value={email}
-              onChange={(event) =>
-                setEmail(event.target.value)
-              }
-              autoComplete="email"
-              required
-            />
-          </label>
-
-          <label className={authFieldClass}>
-            <span>Password</span>
-
-            <input
-              className={authInputClass}
-              type="password"
-              name="password"
-              value={password}
-              onChange={(event) =>
-                setPassword(event.target.value)
-              }
-              autoComplete="new-password"
-              required
-            />
-          </label>
-
-          {error && (
-            <p className={authErrorClass} role="alert">
-              {error}
+          {success && (
+            <p className={authSuccessClass} role="status">
+              {success}
             </p>
           )}
 
-          <button
-            type="submit"
-            className={authSubmitClass}
-            disabled={isSubmitting}
+          <form
+            className={authFormClass}
+            onSubmit={handleSubmit}
+            noValidate
           >
-            {isSubmitting ? "Creating account…" : "Sign up"}
-          </button>
-        </form>
+            <label className={authFieldClass}>
+              <span>Email</span>
 
-        <p className={authFooterClass}>
-          Already have an account?{" "}
-          <Link className={authFooterLinkClass} to="/login">
-            Log in
-          </Link>
-        </p>
+              <input
+                className={authInputClass}
+                type="email"
+                name="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(event) =>
+                  setEmail(event.target.value)
+                }
+                autoComplete="email"
+                required
+              />
+            </label>
+
+            <label className={authFieldClass}>
+              <span>Password</span>
+
+              <input
+                className={authInputClass}
+                type="password"
+                name="password"
+                placeholder="Password"
+                value={password}
+                onChange={(event) =>
+                  setPassword(event.target.value)
+                }
+                autoComplete="new-password"
+                required
+              />
+            </label>
+
+            {error && (
+              <p className={authErrorClass} role="alert">
+                {error}
+              </p>
+            )}
+
+            <button
+              type="submit"
+              className={authSubmitClass}
+              disabled={isSubmitting}
+            >
+              {isSubmitting
+                ? "Creating account..."
+                : "Signup"}
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );

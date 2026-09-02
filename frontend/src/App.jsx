@@ -1,6 +1,7 @@
 import "./App.css";
 import { Outlet, useLoaderData } from "react-router-dom";
 import { useState } from "react";
+import NavBar from "./components/Navbar/NavBar";
 
 function App() {
   const loaderUser = useLoaderData();
@@ -9,6 +10,7 @@ function App() {
   return (
     <div className="flex min-h-screen flex-col">
       <main className="flex-1">
+        <NavBar />
         <Outlet context={{ user, setUser }} />
       </main>
     </div>
