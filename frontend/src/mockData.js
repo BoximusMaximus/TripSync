@@ -1,11 +1,3 @@
-// Mock API responses. Shapes follow resources/ERD.sql.
-// Each page loads from here until the backend endpoints exist,
-// then the mock line in the loader is swapped for the real request.
-
-// QUESTION (open questions 3.2): does the real groups list endpoint
-// return member_count, is_member, and is_leader? The wireframe needs
-// all three, and the README says member_count is computed, never stored.
-// If the list response omits them, each card needs its own request.
 export const mockGroups = [
   {
     id: 1,
@@ -57,15 +49,6 @@ export const mockGroups = [
   },
 ];
 
-// QUESTION (open questions 4.1): trips belong to a group, but the
-// wireframe shows no group name and no group selector. group_id and
-// group_name are included here because the one-vote-per-user-per-group
-// rule can't be shown on screen without them. Confirm the API returns
-// group_name and not just group_id.
-
-// QUESTION (open questions 4.3): does the real trips endpoint return
-// vote_count and has_voted? has_voted is per-user, so it can only come
-// from an authenticated request.
 export const mockTrips = [
   {
     id: 1,
@@ -102,12 +85,6 @@ export const mockTrips = [
   },
 ];
 
-// QUESTION (open questions 5.2): these are all the address fields from
-// ERD.sql. If the backend hydrates street/city/state/zip/country from
-// place_id via server-side Geocoding, the create form sends less.
-
-// Cost is stored as integer cents (ERD.sql). Divide by 100 to display,
-// multiply by 100 on submit. Never store money as a float.
 export const mockActivities = [
   {
     id: 1,
@@ -153,5 +130,78 @@ export const mockActivities = [
     cost_estimate_cents: 45000,
     vote_count: 2,
     has_voted: false,
+  },
+];
+
+export const mockMembers = [
+  {
+    id: 1,
+    group_id: 1,
+    user_id: 1,
+    username: "simon",
+    email: "simon@example.com",
+    read_access: true,
+    write_access: true,
+    is_leader: true,
+  },
+  {
+    id: 2,
+    group_id: 1,
+    user_id: 2,
+    username: "kaylee",
+    email: "kaylee@example.com",
+    read_access: true,
+    write_access: true,
+    is_leader: false,
+  },
+  {
+    id: 3,
+    group_id: 1,
+    user_id: 3,
+    username: "cody",
+    email: "cody@example.com",
+    read_access: true,
+    write_access: false,
+    is_leader: false,
+  },
+  {
+    id: 4,
+    group_id: 1,
+    user_id: 4,
+    username: "mohamed",
+    email: "mohamed@example.com",
+    read_access: true,
+    write_access: false,
+    is_leader: false,
+  },
+  {
+    id: 5,
+    group_id: 1,
+    user_id: 5,
+    username: "abdel",
+    email: "abdel@example.com",
+    read_access: false,
+    write_access: false,
+    is_leader: false,
+  },
+  {
+    id: 6,
+    group_id: 2,
+    user_id: 1,
+    username: "simon",
+    email: "simon@example.com",
+    read_access: true,
+    write_access: false,
+    is_leader: false,
+  },
+  {
+    id: 7,
+    group_id: 2,
+    user_id: 6,
+    username: "angel",
+    email: "angel@example.com",
+    read_access: true,
+    write_access: true,
+    is_leader: true,
   },
 ];
