@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../utilities";
-import { mockTrips, mockGroups } from "../mockData";
+import { mockTrips, mockGroups } from "../fixture/mockData";
 import TripCard from "../components/TripCard/TripCard";
 
 import {

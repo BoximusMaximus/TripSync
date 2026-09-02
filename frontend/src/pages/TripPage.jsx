@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import api from "../utilities";
 import ActivityCard from "../components/ActivityCard/ActivityCard";
-import { mockTrips, mockActivities } from "../mockData";
+import { mockTrips, mockActivities } from "../fixture/mockData";
 import {
   tripDetailPageClass,
   tripDetailHeaderClass,
