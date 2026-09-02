@@ -83,6 +83,13 @@ export default function TripPage() {
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
   const [manualAddress, setManualAddress] = useState(false);
+  const [editingActivityId, setEditingActivityId] = useState(null);
+  const [editDraft, setEditDraft] = useState({
+    name: "",
+    description: "",
+    cost: "",
+  });
+  const [busyActivityId, setBusyActivityId] = useState(null);
 
   const loadTrip = async () => {
     setLoading(true);
@@ -214,6 +221,57 @@ export default function TripPage() {
       setFormError("Could not add activity.");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleEditClick = (activity) => {
+    setEditingActivityId(activity.id);
+    setEditDraft({
+      name: activity.name,
+      description: activity.description,
+      cost: (activity.cost_estimate_cents / 100).toFixed(2),
+    });
+  };
+
+  const handleEditChange = (field, value) => {
+    setEditDraft({ ...editDraft, [field]: value });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingActivityId(null);
+  };
+
+  const handleSaveActivity = async (activityId) => {
+    if (editDraft.name.trim() === "") {
+      return;
+    }
+
+    setBusyActivityId(activityId);
+    setFormError("");
+
+    const payload = {
+      name: editDraft.name,
+      description: editDraft.description,
+      cost_estimate_cents: Math.round(Number(editDraft.cost || 0) * 100),
+    };
+
+    try {
+      // const response = await api.patch(`activities/${activityId}/`, payload);
+      // const savedActivity = response.data;
+      const savedActivity = {
+        ...activities.find((activity) => activity.id === activityId),
+        ...payload,
+      };
+      setActivities(
+        activities.map((activity) =>
+          activity.id === activityId ? savedActivity : activity,
+        ),
+      );
+      setEditingActivityId(null);
+    } catch (err) {
+      setFormError("Could not save activity.");
+    } finally {
+      setBusyActivityId(null);
     }
   };
 
@@ -442,8 +500,22 @@ export default function TripPage() {
             <p className={tripDetailStatusClass}>No activities yet.</p>
           )}
 
+          {formError && !showAddForm && (
+            <p className={tripDetailErrorClass}>{formError}</p>
+          )}
+
           {activities.map((activity) => (
-            <ActivityCard key={activity.id} activity={activity} />
+            <ActivityCard
+              key={activity.id}
+              activity={activity}
+              editing={activity.id === editingActivityId}
+              editDraft={editDraft}
+              onEditChange={handleEditChange}
+              onEditClick={() => handleEditClick(activity)}
+              onSaveClick={() => handleSaveActivity(activity.id)}
+              onCancelClick={handleCancelEdit}
+              busy={activity.id === busyActivityId}
+            />
           ))}
         </div>
 
