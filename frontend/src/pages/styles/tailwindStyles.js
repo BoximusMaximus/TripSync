@@ -39,4 +39,22 @@ export const authSuccessClass =
   "mt-0 mb-5 text-[13px] text-[var(--success)] bg-[var(--bg-raised)] border border-[var(--success)] rounded-md px-2.5 py-2";
 
 export const authSubmitClass =
-  "mt-1 py-2.5 text-sm font-semibold text-white bg-[var(--accent)] border-0 rounded-md cursor-pointer hover:not-disabled:bg-[var(--accent-hover)] disabled:opacity-50 disabled:cursor-not-allowed";
+  "mt-1 py-2.5 text-sm font-semibold text-black bg-[var(--accent)] border-0 rounded-md cursor-pointer hover:not-disabled:bg-[var(--accent-hover)] disabled:opacity-50 disabled:cursor-not-allowed";
+// ========================================
+// 404 Page
+// ========================================
+
+export const notFoundDiv =
+  "min-h-[70vh] flex flex-col items-center justify-center px-6 text-center";
+
+export const notFoundHeader =
+  "m-0 text-8xl font-bold text-[var(--accent)]";
+
+export const notFoundDescription =
+  "mt-4 mb-0 text-2xl font-semibold text-[var(--text-strong)]";
+
+export const notFoundParagraph =
+  "mt-3 mb-8 max-w-md text-sm text-[var(--text-muted)]";
+
+export const notFoundLink =
+  "px-5 py-2.5 rounded-md text-sm font-semibold !text-black bg-[var(--accent)] transition-colors duration-200 hover:bg-[var(--accent-hover)] hover:!text-black";
