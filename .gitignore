@@ -34,3 +34,7 @@ build/
 # Operating System Files
 .DS_Store
 *Zone.Identifier*
+
+# Personal Files
+db-terminal-start.sh
+django-terminal-start.sh
