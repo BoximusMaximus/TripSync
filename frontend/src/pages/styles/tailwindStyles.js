@@ -47,7 +47,6 @@ export const authSubmitClass =
 export const notFoundDiv =
   "min-h-[70vh] flex flex-col items-center justify-center px-6 text-center";
 
-<<<<<<< HEAD
 export const authFooterLinkClass =
   "text-[#0f7173] font-medium no-underline hover:underline";
 
@@ -247,7 +246,6 @@ export const activityEditClass =
 
 export const activityDeleteClass =
   "text-[13px] text-red-600 cursor-pointer hover:underline disabled:opacity-50 disabled:cursor-not-allowed";
-=======
 export const notFoundHeader =
   "m-0 text-8xl font-bold text-[var(--accent)]";
 
@@ -259,4 +257,3 @@ export const notFoundParagraph =
 
 export const notFoundLink =
   "px-5 py-2.5 rounded-md text-sm font-semibold !text-black bg-[var(--accent)] transition-colors duration-200 hover:bg-[var(--accent-hover)] hover:!text-black";
->>>>>>> origin/frontend
