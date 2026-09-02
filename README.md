@@ -2,17 +2,17 @@
 
 A collaborative travel-planning app for groups. Members join a travel group and **vote** on which trip to take and which activities to do — itinerary, activities, and costs in one place.
 
-**Team 2 · Code Platoon (Dakota cohort)** — Cody · Dom · Kaylee · Mohamed · Simon · Abdel · Angel
+**Team 2 · Code Platoon (Dakota cohort)** — Cody · Dom · Kaylee · Mohamed · Simon · Abdel ·
 
 ## Start here
 
-| If you want… | Go to |
-|---|---|
-| The full project context — scope, features, data model, workflow | [`resources/README.md`](resources/README.md) |
-| **What you're working on today** | [`resources/work-breakdown-2026-08-31.md`](resources/work-breakdown-2026-08-31.md) |
-| The database schema | [`resources/ERD.sql`](resources/ERD.sql) · [diagram](resources/travel_planner_erd.png) |
-| Wireframes and shared components | [`resources/wireframes/`](resources/wireframes) · [`resources/components/`](resources/components) |
-| Course requirements | [`resources/1_project_requirements.md`](resources/1_project_requirements.md) |
+| If you want…                                                     | Go to                                                                                             |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| The full project context — scope, features, data model, workflow | [`resources/README.md`](resources/README.md)                                                      |
+| **What you're working on today**                                 | [`resources/work-breakdown-2026-08-31.md`](resources/work-breakdown-2026-08-31.md)                |
+| The database schema                                              | [`resources/ERD.sql`](resources/ERD.sql) · [diagram](resources/travel_planner_erd.png)            |
+| Wireframes and shared components                                 | [`resources/wireframes/`](resources/wireframes) · [`resources/components/`](resources/components) |
+| Course requirements                                              | [`resources/1_project_requirements.md`](resources/1_project_requirements.md)                      |
 
 ## Stack
 

@@ -15,7 +15,7 @@ For groups of friends and travelers who struggle to coordinate a trip itinerary,
 | 1 | It's difficult for a group (e.g., a bachelor party) to collectively decide **where to go** | Users vote on trips to answer *"where are we going?"* — one trip vote per user per group |
 | 2 | It's difficult for a group to collectively decide **what to do** on the trip | Users vote on activities to answer *"what are we doing?"* |
 
-## Team (7 members)
+## Team (6 members)
 
 | Member | Role(s) |
 |--------|---------|
@@ -25,7 +25,6 @@ For groups of friends and travelers who struggle to coordinate a trip itinerary,
 | Mohamed | Front End · AWS / CI-CD |
 | Simon | Front End |
 | Abdel | Front End · QA/QC |
-| Angel | Floater (plugs in wherever the board needs help) |
 
 ## Tech Stack
 
