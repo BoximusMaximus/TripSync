@@ -33,10 +33,13 @@ const NavBar = ({ user, setUser }) => {
     clsx(navLinkClass, isActive && navLinkActiveClass);
 
   const handleLogout = async () => {
-    await userLogOut();
+    const loggedOut = await userLogOut();
+
+    if (!loggedOut) {
+      return;
+    }
 
     setUser(null);
-
     navigate("/");
   };
 

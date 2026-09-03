@@ -1,8 +1,6 @@
 import { redirect } from "react-router-dom";
 import { client } from "./client";
 
-
-
 const errorMessage = (error) => {
   const data = error.response?.data;
 
@@ -15,12 +13,7 @@ const errorMessage = (error) => {
     : JSON.stringify(data);
 };
 
-
-export const signUp = async (
-  username,
-  email,
-  password,
-) => {
+export const signUp = async (username, email, password) => {
   try {
     const response = await client.post("signup/", {
       username,
@@ -41,8 +34,6 @@ export const signUp = async (
     };
   }
 };
-
-
 
 export const logIn = async (username, password) => {
   try {
@@ -65,7 +56,6 @@ export const logIn = async (username, password) => {
   }
 };
 
-
 export const userConfirmation = async () => {
   try {
     const response = await client.get("info/");
@@ -78,22 +68,19 @@ export const userConfirmation = async () => {
   }
 };
 
-
-
 export const userLogOut = async () => {
   try {
     await client.post("logout/");
+    return true;
   } catch (error) {
     console.error(
       "Logout request failed:",
       errorMessage(error),
     );
+
+    return false;
   }
-
-  return null;
 };
-
-
 
 export const requireLogin = async () => {
   const user = await userConfirmation();
@@ -104,7 +91,6 @@ export const requireLogin = async () => {
 
   return user;
 };
-
 
 export const redirectIfLoggedIn = async () => {
   const user = await userConfirmation();
