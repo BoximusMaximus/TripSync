@@ -34,29 +34,17 @@ const router = createBrowserRouter([
         element: <SignUpPage />,
       },
       {
-        path: "home",
-        element: <HomePage />,
-        loader: requireLogin,
+        path: "/groups",
+        element: <GroupsPage />,
       },
       {
         path: "*",
         element: <NotFoundPage />,
       },
-
-      // {
-      //   path: "/groups",
-      //   element: <GroupsPage />,
-      // },
-
-      // {
-      //   path: "/trips",
-      //   element: <TripsPage />,
-      // },
-
-      // {
-      //   path: "/trips/:tripId",
-      //   element: <TripPage />,
-      // },
+      {
+        path: "*",
+        element: <NotFoundPage />,
+      },
     ],
   },
 ]);

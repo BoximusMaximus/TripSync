@@ -6,6 +6,7 @@ import { useState } from "react";
 
 import NavBar from "./components/Navbar/NavBar";
 
+
 function App() {
   const loaderUser = useLoaderData();
 
