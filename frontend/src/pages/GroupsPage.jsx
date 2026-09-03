@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../utilities";
-import { mockGroups, mockMembers} from "../fixture/mockData";
+// import { mockGroups, mockMembers} from "../fixture/mockData";
 import GroupCard from "../components/GroupCard/GroupCard";
 
 import {
@@ -38,8 +38,8 @@ export default function GroupsPage() {
     setError("");
 
     try {
-      // const response = await api.get("groups/");
-      // setGroups(response.data);
+      const response = await api.get("groups/");
+      setGroups(response.data);
       setGroups(mockGroups);
     } catch (err) {
       setError("Could not load groups.");
@@ -64,17 +64,17 @@ export default function GroupsPage() {
     setError("");
 
     try {
-      // const response = await api.post("groups/", { name: newGroupName });
-      // setGroups([...groups, response.data]);
-      const fakeGroup = {
-        id: Date.now(),
-        name: newGroupName,
-        created_on: new Date().toISOString().slice(0, 10),
-        member_count: 1,
-        is_member: true,
-        is_leader: true,
-      };
-      setGroups([...groups, fakeGroup]);
+      const response = await api.post("groups/", { name: newGroupName });
+      setGroups([...groups, response.data]);
+      // const fakeGroup = {
+      //   id: Date.now(),
+      //   name: newGroupName,
+      //   created_on: new Date().toISOString().slice(0, 10),
+      //   member_count: 1,
+      //   is_member: true,
+      //   is_leader: true,
+      // };
+      // setGroups([...groups, fakeGroup]);
 
       setNewGroupName("");
       setShowForm(false);
@@ -89,7 +89,7 @@ export default function GroupsPage() {
     setError("");
 
     try {
-      // await api.post(`groups/${group.id}/join/`);
+      await api.post(`groups/${group.id}/join/`);
       setGroups(
         groups.map((item) =>
           item.id === group.id
@@ -109,7 +109,7 @@ export default function GroupsPage() {
     setError("");
 
     try {
-      // await api.delete(`groups/${group.id}/leave/`);
+      await api.delete(`groups/${group.id}/leave/`);
       setGroups(
         groups.map((item) =>
           item.id === group.id
@@ -135,9 +135,9 @@ export default function GroupsPage() {
     setError("");
 
     try {
-      // const response = await api.get(`groups/${group.id}/members/`);
-      // setMembers(response.data);
-      setMembers(mockMembers.filter((member) => member.group_id === group.id));
+      const response = await api.get(`groups/${group.id}/members/`);
+      setMembers(response.data);
+      // setMembers(mockMembers.filter((member) => member.group_id === group.id));
     } catch (err) {
       setError("Could not load members.");
     } finally {
@@ -150,9 +150,9 @@ export default function GroupsPage() {
     setError("");
 
     try {
-      // await api.patch(`memberships/${member.id}/`, {
-      //   [field]: !member[field],
-      // });
+      await api.patch(`memberships/${member.id}/`, {
+        [field]: !member[field],
+      });
       setMembers(
         members.map((item) =>
           item.id === member.id ? { ...item, [field]: !item[field] } : item,
@@ -170,7 +170,7 @@ export default function GroupsPage() {
     setError("");
 
     try {
-      // await api.delete(`memberships/${member.id}/`);
+      await api.delete(`memberships/${member.id}/`);
       setMembers(members.filter((item) => item.id !== member.id));
 
       setGroups(
@@ -199,10 +199,10 @@ export default function GroupsPage() {
         </button>
       </div>
 
-      <p className={groupsSubtitleClass}>
+      {/* <p className={groupsSubtitleClass}>
         Open to all users · creators grant/revoke read &amp; write access,
         rename, remove members, delete
-      </p>
+      </p> */}
       {showForm && (
         <form className={groupFormClass} onSubmit={handleCreateGroup}>
           <label className={groupFormFieldClass}>

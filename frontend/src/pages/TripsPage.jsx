@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../utilities";
-import { mockTrips, mockGroups } from "../fixture/mockData";
+// import { mockTrips, mockGroups } from "../fixture/mockData";
 import TripCard from "../components/TripCard/TripCard";
 
 import {
@@ -45,8 +45,8 @@ export default function TripsPage() {
     setError("");
 
     try {
-      // const response = await api.get("trips/");
-      // setTrips(response.data);
+      const response = await api.get("trips/");
+      setTrips(response.data);
       setTrips(mockTrips);
     } catch (err) {
       setError("Could not load trips.");
@@ -70,23 +70,23 @@ export default function TripsPage() {
     setError("");
 
     try {
-      // const response = await api.post("trips/", newTrip);
-      // setTrips([...trips, response.data]);
-      const chosenGroup = mockGroups.find(
-        (group) => group.id === Number(newTrip.group_id),
-      );
-      const fakeTrip = {
-        id: Date.now(),
-        group_id: Number(newTrip.group_id),
-        group_name: chosenGroup ? chosenGroup.name : "",
-        name: newTrip.name,
-        city: newTrip.city,
-        state: newTrip.state,
-        country: newTrip.country,
-        vote_count: 0,
-        has_voted: false,
-      };
-      setTrips([...trips, fakeTrip]);
+      const response = await api.post("trips/", newTrip);
+      setTrips([...trips, response.data]);
+      // const chosenGroup = mockGroups.find(
+      //   (group) => group.id === Number(newTrip.group_id),
+      // );
+      // const fakeTrip = {
+      //   id: Date.now(),
+      //   group_id: Number(newTrip.group_id),
+      //   group_name: chosenGroup ? chosenGroup.name : "",
+      //   name: newTrip.name,
+      //   city: newTrip.city,
+      //   state: newTrip.state,
+      //   country: newTrip.country,
+      //   vote_count: 0,
+      //   has_voted: false,
+      // };
+      // setTrips([...trips, fakeTrip]);
 
       setNewTrip({
         name: "",
@@ -123,7 +123,7 @@ export default function TripsPage() {
 
     try {
       if (trip.has_voted) {
-        // await api.delete(`trips/${trip.id}/vote/`);
+        await api.delete(`trips/${trip.id}/vote/`);
         setTrips(
           trips.map((item) =>
             item.id === trip.id
@@ -132,7 +132,7 @@ export default function TripsPage() {
           ),
         );
       } else {
-        // await api.post(`trips/${trip.id}/vote/`);
+        await api.post(`trips/${trip.id}/vote/`);
         setTrips(
           trips.map((item) => {
             if (item.id === trip.id) {
@@ -174,10 +174,10 @@ export default function TripsPage() {
         </button>
       </div>
 
-      <p className={tripsSubtitleClass}>
+      {/* <p className={tripsSubtitleClass}>
         Vote for ONE trip per group — voting again switches your vote · full
         CRUD on trips
-      </p>
+      </p> */}
 
       {showForm && (
         <form className={tripFormClass} onSubmit={handleCreateTrip}>
@@ -297,10 +297,10 @@ export default function TripsPage() {
           </section>
         ))}
 
-      <p className={tripsFooterNoteClass}>
+      {/* <p className={tripsFooterNoteClass}>
         activities per trip are view-only here · Details → Trip Detail /
         Activities page
-      </p>
+      </p> */}
     </div>
   );
 }

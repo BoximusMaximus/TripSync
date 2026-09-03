@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import api from "../utilities";
 import ActivityCard from "../components/ActivityCard/ActivityCard";
-import { mockTrips, mockActivities, mockPlaces } from "../fixture/mockData";
+// import { mockTrips, mockActivities, mockPlaces } from "../fixture/mockData";
 import {
   tripDetailPageClass,
   tripDetailHeaderClass,
@@ -96,15 +96,15 @@ export default function TripPage() {
     setError("");
 
     try {
-      // const tripResponse = await api.get(`trips/${tripId}/`);
-      // setTrip(tripResponse.data);
-      // const activityResponse = await api.get(`trips/${tripId}/activities/`);
-      // setActivities(activityResponse.data);
-      const foundTrip = mockTrips.find((item) => item.id === Number(tripId));
-      setTrip(foundTrip || null);
-      setActivities(
-        mockActivities.filter((item) => item.trip_id === Number(tripId)),
-      );
+      const tripResponse = await api.get(`trips/${tripId}/`);
+      setTrip(tripResponse.data);
+      const activityResponse = await api.get(`trips/${tripId}/activities/`);
+      setActivities(activityResponse.data);
+      // const foundTrip = mockTrips.find((item) => item.id === Number(tripId));
+      // setTrip(foundTrip || null);
+      // setActivities(
+      //   mockActivities.filter((item) => item.trip_id === Number(tripId)),
+      // );
     } catch (err) {
       setError("Could not load trip.");
     } finally {
@@ -138,21 +138,21 @@ export default function TripPage() {
     setFormError("");
 
     try {
-      // const response = await fetch(
-      //   "https://places.googleapis.com/v1/places:searchText",
-      //   {
-      //     method: "POST",
-      //     headers: {
-      //       "Content-Type": "application/json",
-      //       "X-Goog-Api-Key": import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
-      //       "X-Goog-FieldMask":
-      //         "places.id,places.displayName,places.formattedAddress,places.addressComponents",
-      //     },
-      //     body: JSON.stringify({ textQuery: placeQuery, maxResultCount: 5 }),
-      //   },
-      // );
-      // const data = await response.json();
-      // setPlaceResults((data.places || []).map(flattenPlace));
+      const response = await fetch(
+        "https://places.googleapis.com/v1/places:searchText",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Goog-Api-Key": import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
+            "X-Goog-FieldMask":
+              "places.id,places.displayName,places.formattedAddress,places.addressComponents",
+          },
+          body: JSON.stringify({ textQuery: placeQuery, maxResultCount: 5 }),
+        },
+      );
+      const data = await response.json();
+      setPlaceResults((data.places || []).map(flattenPlace));
       setPlaceResults(mockPlaces.map(flattenPlace));
       setSelectedPlace(null);
     } catch (err) {
@@ -206,8 +206,8 @@ export default function TripPage() {
     };
 
     try {
-      // const response = await api.post(`trips/${tripId}/activities/`, payload);
-      // setActivities([...activities, response.data]);
+      const response = await api.post(`trips/${tripId}/activities/`, payload);
+      setActivities([...activities, response.data]);
       const fakeActivity = {
         id: Date.now(),
         trip_id: Number(tripId),
@@ -256,12 +256,12 @@ export default function TripPage() {
     };
 
     try {
-      // const response = await api.patch(`activities/${activityId}/`, payload);
-      // const savedActivity = response.data;
-      const savedActivity = {
-        ...activities.find((activity) => activity.id === activityId),
-        ...payload,
-      };
+      const response = await api.patch(`activities/${activityId}/`, payload);
+      const savedActivity = response.data;
+      // const savedActivity = {
+      //   ...activities.find((activity) => activity.id === activityId),
+      //   ...payload,
+      // };
       setActivities(
         activities.map((activity) =>
           activity.id === activityId ? savedActivity : activity,
@@ -284,7 +284,7 @@ export default function TripPage() {
     setFormError("");
 
     try {
-      // await api.delete(`activities/${activityId}/`);
+      await api.delete(`activities/${activityId}/`);
       setActivities(
         activities.filter((activity) => activity.id !== activityId),
       );
@@ -304,11 +304,11 @@ export default function TripPage() {
     setFormError("");
 
     try {
-      // if (activity.has_voted) {
-      //   await api.delete(`activities/${activity.id}/vote/`);
-      // } else {
-      //   await api.post(`activities/${activity.id}/vote/`);
-      // }
+      if (activity.has_voted) {
+        await api.delete(`activities/${activity.id}/vote/`);
+      } else {
+        await api.post(`activities/${activity.id}/vote/`);
+      }
       const updatedActivity = {
         ...activity,
         has_voted: !activity.has_voted,
@@ -456,7 +456,7 @@ export default function TripPage() {
                 }
               />
             </label>
-                        {manualAddress && (
+            {manualAddress && (
               <>
                 <label className={tripFormFieldClass}>
                   Street
