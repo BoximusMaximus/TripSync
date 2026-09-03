@@ -40,9 +40,9 @@ export const authSuccessClass =
 
 export const authSubmitClass =
   "mt-1 py-2.5 text-sm font-semibold text-black bg-[var(--accent)] border-0 rounded-md cursor-pointer hover:not-disabled:bg-[var(--accent-hover)] disabled:opacity-50 disabled:cursor-not-allowed";
-// ========================================
-// 404 Page
-// ========================================
+//! ========================================
+//! 404 Page
+//! ========================================
 
 export const notFoundDiv =
   "min-h-[70vh] flex flex-col items-center justify-center px-6 text-center";
@@ -50,7 +50,10 @@ export const notFoundDiv =
 export const authFooterLinkClass =
   "text-[#0f7173] font-medium no-underline hover:underline";
 
-// GroupPage styling
+export const notFoundImage =
+  "w-64 max-w-full my-6";
+
+//! GroupPage styling
 export const groupsPageClass = "px-8 py-6";
 
 export const groupsHeaderClass = "flex items-center justify-between";
