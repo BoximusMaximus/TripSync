@@ -22,10 +22,6 @@ const router = createBrowserRouter([
         element: <SignUpPage />,
       },
       {
-        path: "*",
-        element: <NotFoundPage />,
-      },
-      {
         path: "/groups",
         element: <GroupsPage />,
       },
@@ -36,6 +32,10 @@ const router = createBrowserRouter([
       {
         path: "/trips/:tripId",
         element: <TripPage />,
+      },
+      {
+        path: "*",
+        element: <NotFoundPage />,
       },
     ],
   },
