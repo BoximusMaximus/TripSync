@@ -3,8 +3,10 @@ import axios from "axios";
 export const client = axios.create({
   baseURL: "/api/v1/users/",
   withCredentials: true,
+  withXSRFToken: true,
+  xsrfCookieName: "csrftoken",
+  xsrfHeaderName: "X-CSRFToken",
 });
-
 
 const refreshAccessToken = () => {
   return axios.post(
