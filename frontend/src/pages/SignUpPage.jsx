@@ -1,6 +1,13 @@
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import {
+  Link,
+  useLocation,
+  useNavigate,
+  useOutletContext,
+} from "react-router-dom";
 import clsx from "clsx";
+
+import { signUp } from "../services/account";
 
 import {
   authPageClass,
@@ -22,9 +29,13 @@ import {
 
 const SignUpPage = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { setUser } = useOutletContext();
 
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -37,13 +48,21 @@ const SignUpPage = () => {
     setIsSubmitting(true);
 
     try {
-      // Add signup API call here.
-      console.log({
+      const result = await signUp(
+        username,
         email,
         password,
-      });
+      );
 
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+
+      setUser(result.user);
       setSuccess("Account created successfully.");
+
+      navigate("/home");
     } catch (error) {
       console.error(error);
       setError("Unable to create account.");
@@ -101,6 +120,23 @@ const SignUpPage = () => {
             onSubmit={handleSubmit}
             noValidate
           >
+            <label className={authFieldClass}>
+              <span>Username</span>
+
+              <input
+                className={authInputClass}
+                type="text"
+                name="username"
+                placeholder="Username"
+                value={username}
+                onChange={(event) =>
+                  setUsername(event.target.value)
+                }
+                autoComplete="username"
+                required
+              />
+            </label>
+
             <label className={authFieldClass}>
               <span>Email</span>
 
