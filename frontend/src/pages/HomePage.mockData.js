@@ -17,8 +17,8 @@ export const mockHomeData = {
     hasVoted: false,
   },
   activities: [
-    { id: 1, name: "Pool Party at MGM", placeId: "place_1" },
-    { id: 2, name: "Steakhouse Dinner", placeId: "place_2" },
-    { id: 3, name: "Helicopter Tour", placeId: "place_3" },
+    { id: 1, name: "Pool Party at MGM", placeId: "ChIJJQ6Ck8zFyIARfxB2vQVF2Z0" },
+    { id: 2, name: "Steakhouse Dinner", placeId: "ChIJT4mIszHEyIARbIoYQzpc9iA" },
+    { id: 3, name: "Helicopter Tour", placeId: "ChIJE2zMv-7FyIARMkApqxfBrKI" },
   ],
 };
