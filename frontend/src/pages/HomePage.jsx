@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -97,12 +96,23 @@ const HomePage = () => {
       <div className={homeCardsRowClass}>
         {group ? (
           <GroupCard
-            name={group.name}
-            createdOn={group.createdOn}
-            memberCount={group.memberCount}
-            isMember={group.isMember}
-            onNavigate={() => navigate("/groups")}
-            onJoin={group.isMember ? undefined : () => navigate("/groups")}
+            group={{
+              name: group.name,
+              created_on: group.createdOn,
+              member_count: group.memberCount,
+              is_member: group.isMember,
+              is_leader: false,
+            }}
+            onJoinClick={() => navigate("/groups")}
+            onLeaveClick={() => navigate("/groups")}
+            onViewClick={() => navigate("/groups")}
+            busy={false}
+            expanded={false}
+            members={[]}
+            membersLoading={false}
+            onToggleAccess={() => {}}
+            onRemoveMember={() => {}}
+            busyMemberId={null}
           />
         ) : (
           <EmptyState
@@ -114,13 +124,17 @@ const HomePage = () => {
 
         {trip ? (
           <TripCard
-            name={trip.name}
-            destination={trip.destination}
-            voteCount={trip.voteCount}
-            hasVoted={hasVoted}
-            voteLoading={voteLoading}
-            onVoteToggle={handleVoteToggle}
-            onNavigate={() => navigate(`/trips/${trip.id}`)}
+            trip={{
+              id: trip.id,
+              name: trip.name,
+              city: trip.destination?.city,
+              state: trip.destination?.state,
+              country: trip.destination?.country,
+              has_voted: hasVoted,
+              vote_count: trip.voteCount,
+            }}
+            onVoteClick={handleVoteToggle}
+            busy={voteLoading}
           />
         ) : (
           <EmptyState
@@ -152,19 +166,6 @@ const HomePage = () => {
         </div>
       </div>
     </div>
-=======
-const HomePage = () => {
-  return (
-    <main className="min-h-screen flex flex-col items-center justify-center">
-      <h1 className="text-4xl font-bold text-[var(--text-strong)]">
-        Welcome to TripSync
-      </h1>
-
-      <p className="mt-3 text-[var(--text-muted)]">
-        Login successful. Start planning your next trip.
-      </p>
-    </main>
->>>>>>> bea356fbdbb7f8aa06c85abf085ffdc200bb1cad
   );
 };
 

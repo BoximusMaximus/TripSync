@@ -4,14 +4,13 @@ import App from "./App";
 import LoginPage from "./pages/LoginPage";
 import SignUpPage from "./pages/SignUpPage";
 import HomePage from "./pages/HomePage";
+import AboutPage from "./pages/AboutPage";
+import GroupsPage from "./pages/GroupsPage";
 
-// import GroupsPage from "./pages/GroupsPage";
 // import TripsPage from "./pages/TripsPage";
 // import TripPage from "./pages/TripPage";
 
 import NotFoundPage from "./pages/NotFoundPage";
-import HomePage from "./pages/HomePage";
-import AboutPage from "./pages/AboutPage";
 
 import {
   redirectIfLoggedIn,
@@ -36,40 +35,24 @@ const router = createBrowserRouter([
         element: <SignUpPage />,
       },
       {
-<<<<<<< HEAD
         // "/" is still Login until auth routing/redirects are wired up;
         // this is the authenticated landing page in the meantime.
         path: "home",
         element: <HomePage />,
+        loader: requireLogin,
       },
       {
         path: "about",
         element: <AboutPage />,
-=======
-        path: "home",
-        element: <HomePage />,
-        loader: requireLogin,
->>>>>>> bea356fbdbb7f8aa06c85abf085ffdc200bb1cad
+      },
+      {
+        path: "groups",
+        element: <GroupsPage />,
       },
       {
         path: "*",
         element: <NotFoundPage />,
       },
-
-      // {
-      //   path: "/groups",
-      //   element: <GroupsPage />,
-      // },
-
-      // {
-      //   path: "/trips",
-      //   element: <TripsPage />,
-      // },
-
-      // {
-      //   path: "/trips/:tripId",
-      //   element: <TripPage />,
-      // },
     ],
   },
 ]);
