@@ -92,46 +92,46 @@ export default function ActivityCard({
         <div className={activityCardClass}>
             <h3 className={activityNameClass}>{activity.name}</h3>
 
-            <p className={activityDescriptionClass}>{activity.description}</p>
+//             <p className={activityDescriptionClass}>{activity.description}</p>
 
-            <p className={activityAddressClass}>
-                {activity.street} —{" "}
-                {activity.place_id ? "via Google Places" : "manual address (Geocoding)"}
-            </p>
+//             <p className={activityAddressClass}>
+//                 {activity.street} —{" "}
+//                 {activity.place_id ? "via Google Places" : "manual address (Geocoding)"}
+//             </p>
 
-            <p className={activityCostClass}>Est. cost: ${costInDollars}</p>
+//             <p className={activityCostClass}>Est. cost: ${costInDollars}</p>
 
-            <div className={activityActionsClass}>
-                <button
-                    className={
-                        activity.has_voted
-                            ? activityVoteButtonOnClass
-                            : activityVoteButtonClass
-                    }
-                    onClick={onVoteClick}
-                    disabled={busy}
-                >
-                    ▲ Vote · {activity.vote_count}
-                </button>
+//             <div className={activityActionsClass}>
+//                 <button
+//                     className={
+//                         activity.has_voted
+//                             ? activityVoteButtonOnClass
+//                             : activityVoteButtonClass
+//                     }
+//                     onClick={onVoteClick}
+//                     disabled={busy}
+//                 >
+//                     ▲ Vote · {activity.vote_count}
+//                 </button>
 
-                <span className={activityLinkActionsClass}>
-                    <button
-                        className={activityEditClass}
-                        onClick={onEditClick}
-                        disabled={busy}
-                    >
-                        Edit
-                    </button>
+//                 <span className={activityLinkActionsClass}>
+//                     <button
+//                         className={activityEditClass}
+//                         onClick={onEditClick}
+//                         disabled={busy}
+//                     >
+//                         Edit
+//                     </button>
 
-                    <button
-                        className={activityDeleteClass}
-                        onClick={onDeleteClick}
-                        disabled={busy}
-                    >
-                        Delete
-                    </button>
-                </span>
-            </div>
-        </div>
-    );
-}
+//                     <button
+//                         className={activityDeleteClass}
+//                         onClick={onDeleteClick}
+//                         disabled={busy}
+//                     >
+//                         Delete
+//                     </button>
+//                 </span>
+//             </div>
+//         </div>
+//     );
+// }

@@ -5,13 +5,48 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import ensure_csrf_cookie
+
+from django.conf import settings
+
 
 from .serializers import AuthUserSerializer
 
 Auth_User = get_user_model()
 
+
+# Helper function adding cookies with access and refresh token.
+def add_tokens_to_cookie(response, refresh_token):
+    response.set_cookie(
+        "access_token",
+        str(refresh_token.access_token),
+        max_age=settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"].total_seconds(),
+        httponly=True,
+        secure=settings.AUTH_COOKIE_SECURE,
+        samesite=settings.AUTH_COOKIE_SAMESITE,
+    )
+    response.set_cookie(
+        "refresh_token",
+        str(refresh_token),
+        max_age=settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"].total_seconds(),
+        httponly=True,
+        secure=settings.AUTH_COOKIE_SECURE,
+        samesite=settings.AUTH_COOKIE_SAMESITE,
+    )
+    return response
+
+
+# Helper function to kill cookies and their family
+def clear_auth_cookies(response):
+    response.delete_cookie("access_token")
+    response.delete_cookie("refresh_token")
+    return response
+
+
 # Create your views here.
 class Sign_Up(APIView):
+    @method_decorator(ensure_csrf_cookie)
     def post(self, request):
         serializer = AuthUserSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -24,16 +59,17 @@ class Sign_Up(APIView):
 
         refresh = RefreshToken.for_user(new_user_inst)
 
-        return Response(
-            {
-                "client": new_user_inst.username,
-                "access": str(refresh.access_token),
-                "refresh": str(refresh),
-            },
+        response = Response(
+            {"client": new_user_inst.username},
             status=status.HTTP_201_CREATED,
         )
+
+        return add_tokens_to_cookie(response, refresh)
+
+
 class Log_in(APIView):
 
+    @method_decorator(ensure_csrf_cookie)
     def post(self, request):
         username = request.data.get("username")
         password = request.data.get("password")
@@ -51,38 +87,39 @@ class Log_in(APIView):
 
         refresh = RefreshToken.for_user(user)
 
-        return Response(
-            {
-                "client": user.username,
-                "access": str(refresh.access_token),
-                "refresh": str(refresh),
-            },
+        response = Response(
+            {"client": user.username},
             status=status.HTTP_200_OK,
         )
+
+        return add_tokens_to_cookie(response, refresh)
 
 
 class Log_out(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        refresh_token = request.data.get("refresh")
+        refresh_token = request.COOKIES.get("refresh_token")
         if not refresh_token:
-            return Response(
-                {"detail": "\"refresh\" token is required."},
-                status=status.HTTP_400_BAD_REQUEST,
+            return clear_auth_cookies(
+                Response(
+                    {"detail": '"refresh" token is required.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             )
 
         try:
             RefreshToken(refresh_token).blacklist()
         except TokenError:
-            return Response(
-                {"detail": "Invalid or expired refresh token."},
-                status=status.HTTP_400_BAD_REQUEST,
+            return clear_auth_cookies(
+                Response(
+                    {"detail": "Invalid or expired refresh token."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             )
 
-        return Response(
-            status=status.HTTP_204_NO_CONTENT,
-        )
+        return clear_auth_cookies(Response(status=status.HTTP_204_NO_CONTENT))
+
 
 class Info(APIView):
     permission_classes = [IsAuthenticated]
@@ -93,3 +130,24 @@ class Info(APIView):
             serializer.data,
             status=status.HTTP_200_OK,
         )
+
+
+class TokenRefresh(APIView):
+    def post(self, request):
+        raw_refresh = request.COOKIES.get("refresh_token")
+        if not raw_refresh:
+            return Response(
+                {"detail": '"refresh" token is required.'},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        try:
+            refresh = RefreshToken(raw_refresh)
+        except TokenError:
+            return Response(
+                {"detail": "Invalid or expired refresh token."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        response = Response(status=status.HTTP_200_OK)
+        return add_tokens_to_cookie(response, refresh)

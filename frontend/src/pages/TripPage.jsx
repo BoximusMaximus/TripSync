@@ -91,9 +91,9 @@ export default function TripPage() {
   });
   const [busyActivityId, setBusyActivityId] = useState(null);
 
-  const loadTrip = async () => {
-    setLoading(true);
-    setError("");
+//   const loadTrip = async () => {
+//     setLoading(true);
+//     setError("");
 
     try {
       const tripResponse = await api.get(`trips/${tripId}/`);
@@ -112,9 +112,9 @@ export default function TripPage() {
     }
   };
 
-  useEffect(() => {
-    loadTrip();
-  }, [tripId]);
+//   useEffect(() => {
+//     loadTrip();
+//   }, [tripId]);
 
 
   const resetAddForm = () => {
@@ -336,32 +336,32 @@ export default function TripPage() {
     );
   }
 
-  if (error) {
-    return (
-      <div className={tripDetailPageClass}>
-        <p className={tripDetailErrorClass}>{error}</p>
-      </div>
-    );
-  }
+//   if (error) {
+//     return (
+//       <div className={tripDetailPageClass}>
+//         <p className={tripDetailErrorClass}>{error}</p>
+//       </div>
+//     );
+//   }
 
-  if (!trip) {
-    return (
-      <div className={tripDetailPageClass}>
-        <p className={tripDetailStatusClass}>Trip not found.</p>
-        <Link to="/trips">Back to trips</Link>
-      </div>
-    );
-  }
+//   if (!trip) {
+//     return (
+//       <div className={tripDetailPageClass}>
+//         <p className={tripDetailStatusClass}>Trip not found.</p>
+//         <Link to="/trips">Back to trips</Link>
+//       </div>
+//     );
+//   }
 
-  return (
-    <div className={tripDetailPageClass}>
-      <div className={tripDetailHeaderClass}>
-        <div>
-          <h1 className={tripDetailTitleClass}>{trip.name}</h1>
-          <p className={tripDetailLocationClass}>
-            {trip.city}, {trip.state}, {trip.country}
-          </p>
-        </div>
+//   return (
+//     <div className={tripDetailPageClass}>
+//       <div className={tripDetailHeaderClass}>
+//         <div>
+//           <h1 className={tripDetailTitleClass}>{trip.name}</h1>
+//           <p className={tripDetailLocationClass}>
+//             {trip.city}, {trip.state}, {trip.country}
+//           </p>
+//         </div>
 
         <div className={tripDetailActionsClass}>
           <button className={tripDetailEditButtonClass}>Edit Trip</button>
@@ -574,15 +574,15 @@ export default function TripPage() {
           ))}
         </div>
 
-        <div className={tripDetailRightClass}>
-          <div className={tripDetailMapSlotClass}>
-            Google Map — activity pins (Places ID)
-          </div>
-          <p className={tripDetailMapNoteClass}>
-            Cost is a user-entered estimate · votes decide the itinerary
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
+//         <div className={tripDetailRightClass}>
+//           <div className={tripDetailMapSlotClass}>
+//             Google Map — activity pins (Places ID)
+//           </div>
+//           <p className={tripDetailMapNoteClass}>
+//             Cost is a user-entered estimate · votes decide the itinerary
+//           </p>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }

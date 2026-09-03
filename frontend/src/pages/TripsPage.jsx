@@ -24,25 +24,25 @@ import {
   tripFormCancelClass,
 } from "./styles/tailwindStyles";
 
-export default function TripsPage() {
-  const [trips, setTrips] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [busyTripId, setBusyTripId] = useState(null);
+// export default function TripsPage() {
+//   const [trips, setTrips] = useState([]);
+//   const [loading, setLoading] = useState(true);
+//   const [error, setError] = useState("");
+//   const [busyTripId, setBusyTripId] = useState(null);
 
-  const [showForm, setShowForm] = useState(false);
-  const [newTrip, setNewTrip] = useState({
-    name: "",
-    city: "",
-    state: "",
-    country: "",
-    group_id: "",
-  });
-  const [submitting, setSubmitting] = useState(false);
+//   const [showForm, setShowForm] = useState(false);
+//   const [newTrip, setNewTrip] = useState({
+//     name: "",
+//     city: "",
+//     state: "",
+//     country: "",
+//     group_id: "",
+//   });
+//   const [submitting, setSubmitting] = useState(false);
 
-  const loadTrips = async () => {
-    setLoading(true);
-    setError("");
+//   const loadTrips = async () => {
+//     setLoading(true);
+//     setError("");
 
     try {
       const response = await api.get("trips/");
@@ -55,19 +55,22 @@ export default function TripsPage() {
     }
   };
 
-  useEffect(() => {
-    loadTrips();
-  }, []);
+//   useEffect(() => {
+//     loadTrips();
+//   }, []);
 
-  const handleCreateTrip = async (event) => {
-    event.preventDefault();
+//   const handleCreateTrip = async (event) => {
+//     event.preventDefault();
 
-    if (newTrip.name.trim() === "" || newTrip.group_id === "") {
-      return;
-    }
+//     if (
+//       newTrip.name.trim() === "" ||
+//       newTrip.group_id === ""
+//     ) {
+//       return;
+//     }
 
-    setSubmitting(true);
-    setError("");
+//     setSubmitting(true);
+//     setError("");
 
     try {
       const response = await api.post("trips/", newTrip);
@@ -88,20 +91,20 @@ export default function TripsPage() {
       // };
       // setTrips([...trips, fakeTrip]);
 
-      setNewTrip({
-        name: "",
-        city: "",
-        state: "",
-        country: "",
-        group_id: "",
-      });
-      setShowForm(false);
-    } catch (err) {
-      setError("Could not create trip.");
-    } finally {
-      setSubmitting(false);
-    }
-  };
+//       setNewTrip({
+//         name: "",
+//         city: "",
+//         state: "",
+//         country: "",
+//         group_id: "",
+//       });
+//       setShowForm(false);
+//     } catch (err) {
+//       setError("Could not create trip.");
+//     } finally {
+//       setSubmitting(false);
+//     }
+//   };
 
   const groupedTrips = trips.reduce((sections, trip) => {
     const section = sections.find((item) => item.group_id === trip.group_id);
@@ -143,141 +146,164 @@ export default function TripsPage() {
               };
             }
 
-            if (item.group_id === trip.group_id && item.has_voted) {
-              return {
-                ...item,
-                has_voted: false,
-                vote_count: item.vote_count - 1,
-              };
-            }
+//             if (
+//               item.group_id === trip.group_id &&
+//               item.has_voted
+//             ) {
+//               return {
+//                 ...item,
+//                 has_voted: false,
+//                 vote_count: item.vote_count - 1,
+//               };
+//             }
 
-            return item;
-          }),
-        );
-      }
-    } catch (err) {
-      setError("Could not update vote.");
-    } finally {
-      setBusyTripId(null);
-    }
-  };
+//             return item;
+//           }),
+//         );
+//       }
+//     } catch (err) {
+//       setError("Could not update vote.");
+//     } finally {
+//       setBusyTripId(null);
+//     }
+//   };
 
-  return (
-    <div className={tripsPageClass}>
-      <div className={tripsHeaderClass}>
-        <h1 className={tripsTitleClass}>Trips</h1>
-        <button
-          className={tripsNewButtonClass}
-          onClick={() => setShowForm(!showForm)}
-        >
-          {showForm ? "Cancel" : "+ New Trip"}
-        </button>
-      </div>
+//   return (
+//     <div className={tripsPageClass}>
+//       <div className={tripsHeaderClass}>
+//         <h1 className={tripsTitleClass}>Trips</h1>
+//         <button
+//           className={tripsNewButtonClass}
+//           onClick={() => setShowForm(!showForm)}
+//         >
+//           {showForm ? "Cancel" : "+ New Trip"}
+//         </button>
+//       </div>
 
       {/* <p className={tripsSubtitleClass}>
         Vote for ONE trip per group — voting again switches your vote · full
         CRUD on trips
       </p> */}
 
-      {showForm && (
-        <form className={tripFormClass} onSubmit={handleCreateTrip}>
-          <div className={tripFormRowClass}>
-            <label className={tripFormFieldClass}>
-              Group
-              <select
-                className={tripFormSelectClass}
-                value={newTrip.group_id}
-                onChange={(event) =>
-                  setNewTrip({ ...newTrip, group_id: event.target.value })
-                }
-              >
-                <option value="">Select a group</option>
-                {mockGroups.map((group) => (
-                  <option key={group.id} value={group.id}>
-                    {group.name}
-                  </option>
-                ))}
-              </select>
-            </label>
+//       {showForm && (
+//         <form
+//           className={tripFormClass}
+//           onSubmit={handleCreateTrip}
+//         >
+//           <div className={tripFormRowClass}>
+//             <label className={tripFormFieldClass}>
+//               Group
+//               <select
+//                 className={tripFormSelectClass}
+//                 value={newTrip.group_id}
+//                 onChange={(event) =>
+//                   setNewTrip({
+//                     ...newTrip,
+//                     group_id: event.target.value,
+//                   })
+//                 }
+//               >
+//                 <option value="">Select a group</option>
+//                 {mockGroups.map((group) => (
+//                   <option key={group.id} value={group.id}>
+//                     {group.name}
+//                   </option>
+//                 ))}
+//               </select>
+//             </label>
 
-            <label className={tripFormFieldClass}>
-              Trip name
-              <input
-                className={tripFormInputClass}
-                type="text"
-                value={newTrip.name}
-                onChange={(event) =>
-                  setNewTrip({ ...newTrip, name: event.target.value })
-                }
-                placeholder="Oahu Reunion"
-              />
-            </label>
+//             <label className={tripFormFieldClass}>
+//               Trip name
+//               <input
+//                 className={tripFormInputClass}
+//                 type="text"
+//                 value={newTrip.name}
+//                 onChange={(event) =>
+//                   setNewTrip({
+//                     ...newTrip,
+//                     name: event.target.value,
+//                   })
+//                 }
+//                 placeholder="Oahu Reunion"
+//               />
+//             </label>
 
-            <label className={tripFormFieldClass}>
-              City
-              <input
-                className={tripFormInputClass}
-                type="text"
-                value={newTrip.city}
-                onChange={(event) =>
-                  setNewTrip({ ...newTrip, city: event.target.value })
-                }
-                placeholder="Honolulu"
-              />
-            </label>
+//             <label className={tripFormFieldClass}>
+//               City
+//               <input
+//                 className={tripFormInputClass}
+//                 type="text"
+//                 value={newTrip.city}
+//                 onChange={(event) =>
+//                   setNewTrip({
+//                     ...newTrip,
+//                     city: event.target.value,
+//                   })
+//                 }
+//                 placeholder="Honolulu"
+//               />
+//             </label>
 
-            <label className={tripFormFieldClass}>
-              State
-              <input
-                className={tripFormInputClass}
-                type="text"
-                value={newTrip.state}
-                onChange={(event) =>
-                  setNewTrip({ ...newTrip, state: event.target.value })
-                }
-                placeholder="HI"
-              />
-            </label>
+//             <label className={tripFormFieldClass}>
+//               State
+//               <input
+//                 className={tripFormInputClass}
+//                 type="text"
+//                 value={newTrip.state}
+//                 onChange={(event) =>
+//                   setNewTrip({
+//                     ...newTrip,
+//                     state: event.target.value,
+//                   })
+//                 }
+//                 placeholder="HI"
+//               />
+//             </label>
 
-            <label className={tripFormFieldClass}>
-              Country
-              <input
-                className={tripFormInputClass}
-                type="text"
-                value={newTrip.country}
-                onChange={(event) =>
-                  setNewTrip({ ...newTrip, country: event.target.value })
-                }
-                placeholder="USA"
-              />
-            </label>
+//             <label className={tripFormFieldClass}>
+//               Country
+//               <input
+//                 className={tripFormInputClass}
+//                 type="text"
+//                 value={newTrip.country}
+//                 onChange={(event) =>
+//                   setNewTrip({
+//                     ...newTrip,
+//                     country: event.target.value,
+//                   })
+//                 }
+//                 placeholder="USA"
+//               />
+//             </label>
 
-            <button
-              className={tripFormSubmitClass}
-              type="submit"
-              disabled={submitting}
-            >
-              {submitting ? "Creating..." : "Create trip"}
-            </button>
+//             <button
+//               className={tripFormSubmitClass}
+//               type="submit"
+//               disabled={submitting}
+//             >
+//               {submitting ? "Creating..." : "Create trip"}
+//             </button>
 
-            <button
-              className={tripFormCancelClass}
-              type="button"
-              onClick={() => setShowForm(false)}
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
-      )}
+//             <button
+//               className={tripFormCancelClass}
+//               type="button"
+//               onClick={() => setShowForm(false)}
+//             >
+//               Cancel
+//             </button>
+//           </div>
+//         </form>
+//       )}
 
-      {loading && <p className={tripsStatusClass}>Loading trips...</p>}
+//       {loading && (
+//         <p className={tripsStatusClass}>Loading trips...</p>
+//       )}
 
-      {error && <p className={tripsErrorClass}>{error}</p>}
+//       {error && <p className={tripsErrorClass}>{error}</p>}
 
-      {!loading && !error && trips.length === 0 && (
-        <p className={tripsStatusClass}>No trips yet.</p>
-      )}
+//       {!loading && !error && trips.length === 0 && (
+//         <p className={tripsStatusClass}>No trips yet.</p>
+//       )}
 
       {!loading &&
         !error &&
