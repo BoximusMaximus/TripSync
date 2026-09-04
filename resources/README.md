@@ -63,17 +63,19 @@ Full schema in [`ERD.sql`](./ERD.sql) (PostgreSQL, Django-style — translate di
 
 ```mermaid
 erDiagram
-    AUTH_USER ||--o{ MEMBERSHIPS : has
-    GROUPS ||--o{ MEMBERSHIPS : "has members"
     GROUPS ||--o{ TRIPS : has
     TRIPS ||--o{ ACTIVITIES : has
+    AUTH_USER ||--o{ MEMBERSHIPS : has
+    GROUPS ||--o{ MEMBERSHIPS : "has members"
     AUTH_USER ||--o{ TRIP_VOTES : casts
     TRIPS ||--o{ TRIP_VOTES : receives
     AUTH_USER ||--o{ ACTIVITY_VOTES : casts
     ACTIVITIES ||--o{ ACTIVITY_VOTES : receives
+    ACTIVITIES ||--o| ACTIVITY_GEOCODES : "pinned at"
+    TRIPS ||--o| LODGINGS : "stays at"
 
     AUTH_USER {
-        int id PK
+        bigint id PK
         string username
         string email
     }
@@ -84,7 +86,7 @@ erDiagram
     }
     MEMBERSHIPS {
         bigint id PK
-        int user_id FK
+        bigint user_id FK
         bigint group_id FK
         boolean read_access
         boolean write_access
@@ -110,16 +112,42 @@ erDiagram
         string place_id
         integer cost_estimate_cents
         string description
+        timestamptz created_at
+        timestamptz updated_at
+    }
+    ACTIVITY_GEOCODES {
+        bigint id PK
+        bigint activity_id FK
+        decimal latitude
+        decimal longitude
+        string formatted_address
+        timestamptz created_at
+    }
+    LODGINGS {
+        bigint id PK
+        bigint trip_id FK
+        string name
+        string street
+        string city
+        string state
+        string zip
+        string country
+        string place_id
+        decimal latitude
+        decimal longitude
+        string formatted_address
+        timestamptz created_at
+        timestamptz updated_at
     }
     TRIP_VOTES {
         bigint id PK
-        int user_id FK
+        bigint user_id FK
         bigint trip_id FK
         timestamptz created_at
     }
     ACTIVITY_VOTES {
         bigint id PK
-        int user_id FK
+        bigint user_id FK
         bigint activity_id FK
         timestamptz created_at
     }
@@ -127,15 +155,17 @@ erDiagram
 
 | Table | Purpose | Key fields |
 |-------|---------|-----------|
-| `auth_user` | Django built-in user | username, email |
+| `auth_user` | Custom user model (`auth_user_app.Auth_User`, extends `AbstractUser`; bigint pk) | username, email |
 | `groups` | A travel group | name, created_on |
 | `memberships` | User ↔ Group join table | read_access, write_access, is_leader · unique (user, group) |
 | `trips` | A candidate/planned trip, belongs to a group | name, city, state, country |
-| `activities` | An activity, belongs to a trip | name, address fields, place_id, cost_estimate_cents, description |
+| `activities` | An activity, belongs to a trip | name, address fields (optional), place_id (server-written), cost_estimate_cents, description, created_at/updated_at |
+| `activity_geocodes` | Google Geocoding's answer for an activity's location (server-written, one per located activity) | latitude, longitude, formatted_address · unique (activity) |
+| `lodgings` | Where the group is staying — one per trip; the map centers here and place search is biased here | name (optional), address fields (optional — or a place_id pick), place_id / latitude / longitude / formatted_address (server-written from Geocoding) · unique (trip) |
 | `trip_votes` | User ↔ Trip vote | created_at · unique (user, trip) |
 | `activity_votes` | User ↔ Activity vote | created_at · unique (user, activity) |
 
-**Relationships:** a group has many trips → a trip has many activities. Users belong to many groups through `memberships`, and vote through `trip_votes` and `activity_votes`. All FKs cascade on delete.
+**Relationships:** a group has many trips → a trip has many activities. A located activity has exactly one `activity_geocodes` row (Google's pin; absent when it has no location) and a trip has at most one `lodgings` row (where the group stays). Users belong to many groups through `memberships`, and vote through `trip_votes` and `activity_votes`. All FKs cascade on delete.
 
 **Conventions:**
 - Money is stored as **integer cents** (`cost_estimate_cents`) — divide by 100 for display, never store floats for currency. Activity cost is a user-entered estimate, not a fetched value.
