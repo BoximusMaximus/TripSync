@@ -50,3 +50,4 @@ class CreateGroup(APIView):
             serializer.data,
             status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
         )
+

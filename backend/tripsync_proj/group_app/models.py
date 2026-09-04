@@ -6,7 +6,7 @@ from trip_app.models import Trip
 class Group(models.Model):
     auth_user = models.ManyToManyField(
         Auth_User,
-        related_name="groups"
+        related_name="user_trip_groups"
     )
     trip = models.OneToOneField(
         Trip,
