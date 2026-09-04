@@ -45,6 +45,8 @@ Token lifetimes and rotation are configured via `SIMPLE_JWT` in settings.py:
 
 ### Endpoints
 
+## User Endpoints
+
 Base path: `/api/v1/users/` (`tripsync_proj/urls.py` -> `auth_user_app.urls`). Existing endpoint paths/names are unchanged from the token-auth version; `token/refresh/` is new, required by JWT.
 
 | Method | Path      | View      | Auth required | Notes |
@@ -57,6 +59,17 @@ Base path: `/api/v1/users/` (`tripsync_proj/urls.py` -> `auth_user_app.urls`). E
 
 `AuthUserSerializer` (`serializers.py`) exposes `id`, `username`, `email` (`id` read-only).
 
+## Trip Endpoints
+
+Path shown is as defined in `trip_app/urls.py` (`trips/<int:trip_id>/`); not yet wired into `tripsync_proj/urls.py`, so the base prefix isn't final.
+
+| Method | Path      | View      | Auth required | Notes |
+|--------|-----------|-----------|----------------|-------|
+| GET    | `trips/<trip_id>/` | `TripById` | No | Returns serialized trip via `TripSerializer`, `404` if `trip_id` doesn't exist. |
+| PUT    | `trips/<trip_id>/` | `TripById` | No | Full update via `TripSerializer`. `404` if trip doesn't exist, `400` with field errors on bad input. |
+| DELETE | `trips/<trip_id>/` | `TripById` | No | Deletes the trip, returns `204`. `404` if it doesn't exist. |
+
+`TripSerializer` (`serializers.py`) exposes `id`, `name`, `city`, `state`, `country` (`id` read-only).
 ## Created User Tests
 Inside of our "tripsync_proj", youll find a "tests" directory with a backend test.
 
