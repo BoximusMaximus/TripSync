@@ -15,6 +15,7 @@ from .serializers import AuthUserSerializer
 
 Auth_User = get_user_model()
 
+
 # Helper function adding cookies with access and refresh token.
 def add_tokens_to_cookie(response, refresh_token):
     response.set_cookie(
@@ -35,14 +36,17 @@ def add_tokens_to_cookie(response, refresh_token):
     )
     return response
 
+
 # Helper function to kill cookies and their family
 def clear_auth_cookies(response):
-        response.delete_cookie("access_token")
-        response.delete_cookie("refresh_token")
-        return response
+    response.delete_cookie("access_token")
+    response.delete_cookie("refresh_token")
+    return response
+
 
 # Create your views here.
 class Sign_Up(APIView):
+    @method_decorator(ensure_csrf_cookie)
     def post(self, request):
         serializer = AuthUserSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -59,12 +63,12 @@ class Sign_Up(APIView):
             {"client": new_user_inst.username},
             status=status.HTTP_201_CREATED,
         )
-        
+
         return add_tokens_to_cookie(response, refresh)
 
 
 class Log_in(APIView):
-    
+
     @method_decorator(ensure_csrf_cookie)
     def post(self, request):
         username = request.data.get("username")
@@ -74,7 +78,7 @@ class Log_in(APIView):
             username=username,
             password=password,
         )
-        
+
         if not user:
             return Response(
                 "Invalid credentials",
@@ -87,23 +91,19 @@ class Log_in(APIView):
             {"client": user.username},
             status=status.HTTP_200_OK,
         )
-        
+
         return add_tokens_to_cookie(response, refresh)
-
-
-
 
 
 class Log_out(APIView):
     permission_classes = [IsAuthenticated]
-    
 
     def post(self, request):
         refresh_token = request.COOKIES.get("refresh_token")
         if not refresh_token:
             return clear_auth_cookies(
                 Response(
-                    {"detail": "\"refresh\" token is required."},
+                    {"detail": '"refresh" token is required.'},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             )
@@ -121,7 +121,6 @@ class Log_out(APIView):
         return clear_auth_cookies(Response(status=status.HTTP_204_NO_CONTENT))
 
 
-
 class Info(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -132,12 +131,13 @@ class Info(APIView):
             status=status.HTTP_200_OK,
         )
 
+
 class TokenRefresh(APIView):
     def post(self, request):
         raw_refresh = request.COOKIES.get("refresh_token")
         if not raw_refresh:
             return Response(
-                {"detail": "\"refresh\" token is required."},
+                {"detail": '"refresh" token is required.'},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
