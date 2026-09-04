@@ -12,6 +12,7 @@
     "cy:run": "npx cypress run --spec"
   },
   "dependencies": {
+    "@googlemaps/js-api-loader": "^2.1.1",
     "axios": "^1.20.0",
     "clsx": "^2.1.1",
     "react": "^19.2.8",
