@@ -1,23 +1,11 @@
 from django.urls import path
-
-from .views import ActivityDeleteView, ActivityListCreateView, ActivityVoteView
-
-app_name = "activities_app"
+from .views import ALodging, AllActivities, AnActivity, AnActivityVote, FindActivities
 
 urlpatterns = [
-    path(
-        "trips/<int:trip_id>/activities/",
-        ActivityListCreateView.as_view(),
-        name="activity-list-create",
-    ),
-    path(
-        "trips/<int:trip_id>/activities/<int:activity_id>/",
-        ActivityDeleteView.as_view(),
-        name="activity-delete",
-    ),
-    path(
-        "trips/<int:trip_id>/activities/<int:activity_id>/vote/",
-        ActivityVoteView.as_view(),
-        name="activity-vote",
-    ),
+    path("", AllActivities.as_view(), name="all_activities"),
+    #static routes ABOVE '<int:id>/' - patterns are tried top to bottom
+    path("search/", FindActivities.as_view(), name="find_activities"),
+    path("lodging/<int:trip_id>/", ALodging.as_view(), name="a_lodging"),
+    path("<int:id>/", AnActivity.as_view(), name="an_activity"),
+    path("<int:id>/vote/", AnActivityVote.as_view(), name="activity_vote"),
 ]
