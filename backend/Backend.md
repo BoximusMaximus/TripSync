@@ -61,15 +61,35 @@ Base path: `/api/v1/users/` (`tripsync_proj/urls.py` -> `auth_user_app.urls`). E
 
 ## Trip Endpoints
 
-Path shown is as defined in `trip_app/urls.py` (`trips/<int:trip_id>/`); not yet wired into `tripsync_proj/urls.py`, so the base prefix isn't final.
+Base path: `/api/v1/trips/` (`tripsync_proj/urls.py` -> `trip_app.urls`). All require auth (`IsAuthenticated`).
 
-| Method | Path      | View      | Auth required | Notes |
-|--------|-----------|-----------|----------------|-------|
-| GET    | `trips/<trip_id>/` | `TripById` | No | Returns serialized trip via `TripSerializer`, `404` if `trip_id` doesn't exist. |
-| PUT    | `trips/<trip_id>/` | `TripById` | No | Full update via `TripSerializer`. `404` if trip doesn't exist, `400` with field errors on bad input. |
-| DELETE | `trips/<trip_id>/` | `TripById` | No | Deletes the trip, returns `204`. `404` if it doesn't exist. |
+| Method | Path      | View      | Notes |
+|--------|-----------|-----------|-------|
+| POST   | `/api/v1/trips/create/` | `CreateTrip` | Creates a `Trip`, then auto-creates its `Group` and adds the requesting user as the first member. |
+| GET    | `/api/v1/trips/<trip_id>/` | `TripById` | Returns serialized trip, `404` if `trip_id` doesn't exist. |
+| PUT    | `/api/v1/trips/<trip_id>/` | `TripById` | Full update via `TripSerializer`. `400` with field errors on bad input. |
+| DELETE | `/api/v1/trips/<trip_id>/` | `TripById` | Deletes the trip, returns `204`. |
 
 `TripSerializer` (`serializers.py`) exposes `id`, `name`, `city`, `state`, `country` (`id` read-only).
+
+**Note for the team:** no ownership/membership check yet on `TripById` — any authenticated user can GET/PUT/DELETE any trip by ID, not just trips they belong to. Fine for now, worth tightening later.
+
+## Group Endpoints
+
+Base path: `/api/v1/groups/` (`tripsync_proj/urls.py` -> `group_app.urls`). All require auth (`IsAuthenticated`).
+
+A `Trip` has exactly one `Group` (`Group.trip` is `OneToOneField`); a `Group` can have many members via `Group.auth_user` (`ManyToManyField`). Multiple users on a trip means multiple members on that one `Group`, not multiple `Group` rows.
+
+| Method | Path      | View      | Notes |
+|--------|-----------|-----------|-------|
+| POST   | `/api/v1/groups/create/` | `CreateGroup` | Body: `trip_id`. Adds the requesting user to the trip's group, creating it first if needed (`get_or_create`) — `201` if created, `200` if it already existed. `400` if `trip_id` is missing/invalid. |
+| GET    | `/api/v1/groups/<group_id>/` | `GroupById` | Returns serialized group by its own ID. |
+| GET    | `/api/v1/groups/trip/<trip_id>/` | `GroupByTripId` | Returns the group for a given trip. |
+| GET    | (no path yet) | `AllUserGroups` | Returns all groups the requesting user belongs to — not yet wired into `urls.py`. |
+
+`GroupSerializer` (`serializers.py`) exposes all fields (`id` read-only), including `auth_user` as a list of member IDs.
+
+**Note for the team:** same as trips — no membership check yet on `GroupById`/`GroupByTripId`, any authenticated user can look up any group.
 ## Created User Tests
 Inside of our "tripsync_proj", youll find a "tests" directory with a backend test.
 
