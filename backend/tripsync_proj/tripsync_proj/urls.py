@@ -22,5 +22,5 @@ urlpatterns = [
     path('api/v1/users/', include("auth_user_app.urls")),
     path('api/v1/trips/', include("trip_app.urls")),
     path('api/v1/groups/', include("group_app.urls")),
-    path('api/', include('activities_app.urls')),
+    path('api/v1/activities/', include('activities_app.urls')),
 ]

@@ -5,7 +5,9 @@ Django + Django REST Framework backend for TripSync. This doc tracks backend-spe
 ## Apps
 
 - `tripsync_proj` — project config (settings, root urls)
-- `activities_app` — activity data
+- `activities_app` — activities, activity votes, lodging (where the group stays), Google Geocoding + Places (New)
+- `trip_app` — trips
+- `group_app` — trip membership (one Group per trip, members via M2M)
 - `auth_user_app` — custom user model + authentication endpoints
 
 ## Codys Notes 09/02/2026
@@ -90,6 +92,25 @@ A `Trip` has exactly one `Group` (`Group.trip` is `OneToOneField`); a `Group` ca
 `GroupSerializer` (`serializers.py`) exposes all fields (`id` read-only), including `auth_user` as a list of member IDs.
 
 **Note for the team:** same as trips — no membership check yet on `GroupById`/`GroupByTripId`, any authenticated user can look up any group.
+
+## Activities Endpoints
+
+Base path: `/api/v1/activities/` (`tripsync_proj/urls.py` -> `activities_app.urls`). All require the `access_token` cookie (401 otherwise) and `X-CSRFToken` on writes (403 otherwise). Server-side Google: Geocoding inside lodging PUT and activity POST/PUT when a location is supplied; Places (New) Text Search behind `search/`, centered on the trip's lodging. Key = `GOOGLE_MAPS_SERVER_KEY` in `backend/.env` (both APIs enabled on it).
+
+| Method | Path | View | Notes |
+|---|---|---|---|
+| GET | `/api/v1/activities/?trip=<id>` | `AllActivities` | 400 without `trip`, 404 unknown trip |
+| POST | `/api/v1/activities/` | `AllActivities` | 201 activity; 400 field errors or `{"error": "Address could not be geocoded"}` |
+| GET | `/api/v1/activities/<id>/` | `AnActivity` | 404 unknown id |
+| PUT/PATCH | `/api/v1/activities/<id>/` | `AnActivity` | partial; re-geocodes on address/place_id change (old pin kept if Google fails; blanking every address field drops the pin); 400 `{"error": "trip cannot be changed"}` on re-parent |
+| DELETE | `/api/v1/activities/<id>/` | `AnActivity` | 204 |
+| POST | `/api/v1/activities/<id>/vote/` | `AnActivityVote` | 201 activity; 409 duplicate |
+| DELETE | `/api/v1/activities/<id>/vote/` | `AnActivityVote` | 204; 404 if no vote |
+| GET | `/api/v1/activities/lodging/<trip_id>/` | `ALodging` | 404 until set |
+| PUT | `/api/v1/activities/lodging/<trip_id>/` | `ALodging` | 201 first set / 200 replace; always geocodes; 400 if no location or Google fails (nothing written — the old row survives a failed replace); 404 unknown trip |
+| DELETE | `/api/v1/activities/lodging/<trip_id>/` | `ALodging` | 204; 404 if not set |
+| GET | `/api/v1/activities/search/?trip=<id>&query=<text>` | `FindActivities` | list of places around the lodging; 400 if no lodging; 502 if Google fails |
+
 ## Created User Tests
 Inside of our "tripsync_proj", youll find a "tests" directory with a backend test.
 
