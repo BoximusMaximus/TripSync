@@ -2,26 +2,26 @@
 
 > Revision of `APIendpoints.md`, checked against `ERD.sql`, `resources/README.md`, `settings.py`, and `frontend/nginx/default.conf`. Original left untouched — review this, then replace the original if the team agrees.
 >
-> **Status:** target spec, nothing implemented yet. `urls.py` currently serves only `/admin/`; no Django app exists.
+> **Status:** the Activities and Activity votes tables below are implemented as written — see `backend/Backend.md`. Users, trips and groups exist but at different paths than the rows below (`/api/v1/users/signup/`, `/api/v1/trips/create/`, `/api/v1/groups/create/` etc., see `backend/Backend.md`); those rows remain the proposed target.
 
 ## What changed and why
 
-1. **Everything now lives under `/api/`.** Nginx only proxies `location /api/` to Django (`frontend/nginx/default.conf:31`) — any route without the prefix reaches the React app in production and 404s. In `urls.py` the routes must include the prefix: `path("api/groups/...", ...)`.
+1. **Everything now lives under `/api/`.** Nginx only proxies `location /api/` to Django (`frontend/nginx/default.conf:31`) — any route without the prefix reaches the React app in production and 404s. In `urls.py` the routes must include the prefix: `path("api/v1/groups/...", ...)`.
 2. **Added a Method column; verbs moved out of URLs.** `/groups/create/` → `POST /api/groups/`; `/users/delete/` → `DELETE /api/users/me/`. This is the shape DRF routers and generic views produce for free — fighting it means writing more code, not less.
 3. **Dropped `/trips/<id>/add_group/` — the relationship was backwards.** In `ERD.sql`, `trips.group_id` means a trip belongs to a group from birth. You don't add a group to a trip; you create a trip *inside* a group: `POST /api/groups/<id>/trips/`. (Same reversed-FK mistake as the retired drawSQL diagram.)
-4. **Votes reshaped to match the README rules.** The original had `add_vote` only — no way to remove a vote or switch it, both of which are Must requirements. Trip vote is now `PUT` (cast-or-switch: one vote per user per group) and activity vote is `POST` (one of many independent votes, DB-unique per user+activity); both get `DELETE`. "Have I already voted?" comes back as `my_vote` on the detail GETs rather than a separate call.
+4. **Votes reshaped to match the README rules.** The original had `add_vote` only — no way to remove a vote or switch it, both of which are Must requirements. Trip vote is now `PUT` (cast-or-switch: one vote per user per group) and activity vote is `POST` (one of many independent votes, DB-unique per user+activity); both get `DELETE`. "Have I already voted?" comes back as `my_vote` on the trip detail GET and `has_voted` on activity GETs rather than a separate call.
 5. **Auth completed for the graded requirement** (register / login / logout / confirmation): added token refresh and logout. Logout = blacklisting the refresh token — `rest_framework_simplejwt.token_blacklist` is already in `INSTALLED_APPS`, so this is the intended design.
 6. **Added the list endpoints the pages need.** The original had only detail-by-id routes. The Groups page needs *all groups*, Home needs *my groups*, Trips page needs *trips in a group*, Trip Detail needs *activities in a trip*.
 7. **Membership endpoints cover the leader powers** from the README (grant/revoke read/write, remove member) plus self-service join/leave.
 8. **Dropped "id or name" notes** — a `<int:id>` converter can only match integers. IDs only; search-by-name can be a query param later if needed.
-9. **Google section corrected:** the list response belongs to Places *Text Search* (a POST), not the Place Details GET; geocoding params include `street`; radius is meters (max 50,000 — 5 mi ≈ 8,047 m). Both keys stay server-side; **add `GOOGLE_MAPS_API_KEY=` to `backend/.env.example`** — it isn't there yet.
+9. **Google section corrected:** the list response belongs to Places *Text Search* (a POST), not the Place Details GET; geocoding params include `street`; radius is meters (max 50,000 — 5 mi ≈ 8,047 m). The server key (`GOOGLE_MAPS_SERVER_KEY` in `backend/.env.example`) serves Geocoding and Places (New) and never ships to the browser; the Maps JS browser key (`VITE_GOOGLE_MAPS_API_KEY`, in `frontend/.env.example` on the `frontend` branch) is `VITE_`-exposed at build time and must be HTTP-referrer restricted in the Cloud console.
 
 ## Conventions
 
-- All endpoints prefixed `/api/`; trailing slashes on (Django default).
-- Auth: `Authorization: Bearer <access token>` on everything except register, login, and refresh.
+- All endpoints prefixed `/api/v1/`; trailing slashes on (Django default).
+- Auth: httponly cookie JWT (`access_token`) set by `/api/v1/users/login/` + `X-CSRFToken` header on writes — see `backend/Backend.md`.
 - Errors: 400 validation, 401 unauthenticated, 403 not permitted (e.g. non-leader), 404 not found, 409 duplicate vote.
-- Computed fields ride on GET responses via `annotate` — `member_count` on groups, `vote_count` + `total_cost_cents` on trips, `vote_count` on activities, `my_vote` on trips and activities. No separate count endpoints.
+- Computed fields ride on every activity response (list, detail, create, edit, vote) — `vote_count` and `has_voted` on activities, computed per row in the serializer today (`annotate` is the at-scale upgrade); `member_count` on groups, `vote_count` + `total_cost_cents` + `my_vote` on trips are still the target. No separate count endpoints.
 
 ## Auth & Users
 
@@ -71,45 +71,48 @@
 
 | Method | Endpoint | Purpose | Notes |
 |---|---|---|---|
-| GET | `/api/trips/<int:tid>/activities/` | list activities for trip | Trip Detail page + map pins |
-| POST | `/api/trips/<int:tid>/activities/` | add activity | body: name, description, cost_estimate_cents, place_id **or** manual address |
-| GET | `/api/activities/<int:id>/` | activity detail | includes `vote_count`, `my_vote` |
-| PUT | `/api/activities/<int:id>/` | edit activity | |
-| DELETE | `/api/activities/<int:id>/` | delete activity | |
-| GET | `/api/activities/find_coords/` | address → lat/lng + place_id | params: `street`, `city`, `state`, `zip`, `country` — the manual-address fallback (Geocoding) |
-| GET | `/api/activities/find_activities/` | search places near a point | params: `query`, `lat`, `lng`, `radius_m` (≤ 50000), `min_rating`, `max_results` (Places Text Search) |
+| GET | `/api/v1/activities/?trip=<id>` | list activities for a trip | Trip Detail page + map pins; `trip` query param required (400 if missing, 404 if unknown); each row carries `latitude`/`longitude` (numbers or null), `formatted_address` (or null), `vote_count`, `has_voted` |
+| POST | `/api/v1/activities/` | add activity | 201 with the activity; body: `trip` and `name` (required), `description`, `cost_estimate_cents` (whole cents >= 0, default 0), and either `place_id` (Places pick) or any of `street/city/state/zip/country` (manual) — all optional; 400 field errors on bad input; server geocodes when a location is given — 400 `{"error": "Address could not be geocoded"}` and no row on failure; no location at all is allowed (no pin) |
+| GET | `/api/v1/activities/<int:id>/` | activity detail | same shape as the list rows |
+| PUT / PATCH | `/api/v1/activities/<int:id>/` | edit activity | partial — send only changed fields; a changed address or `place_id` re-geocodes (old pin kept if Google fails; blanking every address field drops the pin); `trip` cannot change (400) |
+| DELETE | `/api/v1/activities/<int:id>/` | delete activity | 204; cascades pin + votes |
+| GET | `/api/v1/activities/lodging/<int:trip_id>/` | where the group is staying | the map center; 404 until set (the UI shows the lodging form) |
+| PUT | `/api/v1/activities/lodging/<int:trip_id>/` | set or replace the lodging | body: `name` (optional) and either `place_id` (Places pick) or an address; server geocodes — 201 first time, 200 on replace; 400 `{"error": "Provide a place_id or an address"}` if the body has neither; 400 `{"error": "Address could not be geocoded"}` if Google fails, with nothing written (first set: no row; replace: the old row stands); 404 unknown trip; replace, not merge — any address field not sent is reset to '' |
+| DELETE | `/api/v1/activities/lodging/<int:trip_id>/` | clear the lodging | 204 |
+| GET | `/api/v1/activities/search/` | Places Text Search around the lodging | params: `trip`, `query` (both required; missing → 400), `radius_m` (metres, default 5000, clamped to 0–50000), `min_rating` (0–5 in 0.5 steps, optional, passed through unvalidated), `max_results` (default 10, clamped to 1–20); non-numeric values → 400 `{"error": "radius_m, min_rating and max_results must be numbers"}`; 404 unknown trip; 400 `{"error": "Set where the group is staying first"}` if the trip has no lodging; 502 `{"error": "Place search failed"}` if Google fails; each hit: `place_id, name, formatted_address, latitude, longitude` |
 
 ### Activity votes
 
 | Method | Endpoint | Purpose | Notes |
 |---|---|---|---|
-| POST | `/api/activities/<int:id>/vote/` | add my vote | duplicate → 409; DB unique (user, activity) is the backstop |
-| DELETE | `/api/activities/<int:id>/vote/` | remove my vote | |
+| POST | `/api/v1/activities/<int:id>/vote/` | add my vote | 201 with the updated activity (`vote_count`, `has_voted`); duplicate → 409; DB unique (user, activity) is the backstop |
+| DELETE | `/api/v1/activities/<int:id>/vote/` | remove my vote | 204; no vote of mine → 404 |
 
-## Google integration (server-side — key never ships to the browser)
+## Google integration (two keys: a browser key for Maps JS — `VITE_GOOGLE_MAPS_API_KEY`, HTTP-referrer restricted; a server key — `GOOGLE_MAPS_SERVER_KEY` — for Geocoding + Places (New), never shipped to the browser)
 
 Both user stories from the original stand:
 
-> **Geocoding** — user is staying at an Airbnb with no Places entry. They type an address; we return lat/lng and a place_id. Powers `find_coords`.
+> **Geocoding** — user is staying at an Airbnb with no Places entry. They type the lodging address; the server geocodes it inside `PUT /api/v1/activities/lodging/<trip_id>/` and stores lat/lng + place_id — the map center and the search bias. The same call is the manual-address fallback on activities.
 >
-> **Places search** — user wants restaurants near the Airbnb. Text query + max results + min rating + a circle (center from geocoding, radius chosen or preset). Powers `find_activities`.
+> **Places search** — user wants restaurants near the Airbnb. Text query + max results + min rating + a circle (center from geocoding, radius chosen or preset). Powers `GET /api/v1/activities/search/?trip=&query=` — the circle's center is the trip's stored lodging.
 
 Corrected call shapes:
 
-**Geocoding** (for `find_coords`):
+**Geocoding** (lodging PUT and the manual-address fallback on activities) and **Text Search** (`search/`) — v4 / Places (New): header auth, field masks:
 ```
-GET https://maps.googleapis.com/maps/api/geocode/json?address=<url-encoded address>&key=<KEY>
-→ results[0].geometry.location {lat, lng} and results[0].place_id
-```
+GET https://geocode.googleapis.com/v4/geocode/places/<PLACE_ID>            (Places pick)
+GET https://geocode.googleapis.com/v4/geocode/address/<url-encoded text>   (manual entry; ?regionCode=XX bias when country is ISO-2)
+Headers: X-Goog-Api-Key: <SERVER KEY>
+         X-Goog-FieldMask: location,formattedAddress,placeId          (place form)
+         X-Goog-FieldMask: results.location,results.formattedAddress,results.placeId  (address form)
+→ location {latitude, longitude}, formattedAddress, placeId   (address form wraps in results[])
 
-**Text Search** (for `find_activities`) — note this is a **POST**, and the list response the original sketched belongs here, not to Place Details:
-```
-POST https://places.googleapis.com/v1/places:searchText
-Headers: X-Goog-Api-Key: <KEY>
-         X-Goog-FieldMask: places.id,places.displayName,places.formattedAddress,places.location,places.rating
-Body: { "textQuery": "pizza in Chicago", "maxResultCount": 5, "minRating": 4,
-        "locationBias": { "circle": { "center": { "latitude": ..., "longitude": ... }, "radius": 8047 } } }
-→ places[]: { id, displayName {text, languageCode}, formattedAddress, location {latitude, longitude}, rating }
+POST https://places.googleapis.com/v1/places:searchText                  (search around the lodging)
+Headers: X-Goog-Api-Key: <SERVER KEY>, Content-Type: application/json
+         X-Goog-FieldMask: places.id,places.displayName,places.formattedAddress,places.location   (REQUIRED)
+Body: { "textQuery": "...", "pageSize": ≤20, "minRating": 0-5 in 0.5 steps (optional),
+        "locationBias": { "circle": { "center": { "latitude", "longitude" }, "radius": ≤50000 m } } }
+→ places[]: { id, displayName {text, languageCode}, formattedAddress, location {latitude, longitude} }
 ```
 
 **Place Details** (only if we need more than search returns):
@@ -118,7 +121,7 @@ GET https://places.googleapis.com/v1/places/<PLACE_ID>
 Headers: X-Goog-Api-Key, X-Goog-FieldMask
 ```
 
-Practical notes: the new Places API requires the field-mask header on every call (omitting it is an error, not "all fields"); `radius` is meters, max 50,000; `minRating` moves in 0.5 steps; Google uses `latitude`/`longitude`, not `lon`.
+Practical notes: the new Places API requires the field-mask header on every call (omitting it is an error, not "all fields"); `radius` is meters, max 50,000; `minRating` moves in 0.5 steps; Google uses `latitude`/`longitude`, not `lon`; `pageSize` (≤ 20) replaced the deprecated `maxResultCount`; `rating` stays out of the mask because it moves billing to the Enterprise SKU.
 
 ## Old → New mapping
 
@@ -135,7 +138,7 @@ Practical notes: the new Places API requires the field-mask header on every call
 | `/trips/<id>` | `GET`/`PUT`/`DELETE /api/trips/<id>/` |
 | `/trip_votes/<trip_id>` | `my_vote` + `vote_count` on `GET /api/trips/<id>/` |
 | `/trip_votes/<trip_id>/add_vote/` | `PUT /api/trips/<id>/vote/` (+ `DELETE` to remove) |
-| `/activities/create/` | `POST /api/trips/<tid>/activities/` |
-| `/activities/<id>` | `GET`/`PUT`/`DELETE /api/activities/<id>/` |
-| `/activities/find_coords/`, `/activities/find_activities/` | same, under `/api/` |
-| `/activities_votes/<activity_id>/add_vote/` | `POST /api/activities/<id>/vote/` (+ `DELETE` to remove) |
+| `/activities/create/` | `POST /api/v1/activities/` (`trip` in the body) |
+| `/activities/<id>` | `GET`/`PUT`/`PATCH`/`DELETE /api/v1/activities/<id>/` |
+| `/activities/find_coords/`, `/activities/find_activities/` | `PUT /api/v1/activities/lodging/<trip_id>/` (geocoded, persisted) and `GET /api/v1/activities/search/?trip=&query=` (Places, centered on the lodging) |
+| `/activities_votes/<activity_id>/add_vote/` | `POST /api/v1/activities/<id>/vote/` (+ `DELETE` to remove) |
