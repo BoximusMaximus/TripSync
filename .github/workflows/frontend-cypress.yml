@@ -80,7 +80,12 @@ jobs:
           exit 1
 
       - name: Run Cypress tests
-        run: docker compose exec -T frontend npx cypress run
+        uses: cypress-io/github-action@v6
+        with:
+          working-directory: frontend
+          install: true
+          browser: chrome
+          config: baseUrl=http://localhost:5173
 
       - name: Show Docker logs on failure
         if: failure()
