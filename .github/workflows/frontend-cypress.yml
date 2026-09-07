@@ -24,7 +24,7 @@ jobs:
       - name: Create backend env
         run: |
           cat <<EOF > backend/.env
-          SECRET_KEY=DJANGO_SECRET_KEY
+          DJANGO_SECRET_KEY=test-secret-key-for-cypress
           DEBUG=True
           ALLOWED_HOSTS=localhost,127.0.0.1
           POSTGRES_DB=tripsync_db
@@ -40,13 +40,17 @@ jobs:
       - name: Start Docker containers
         run: docker compose up -d --build
 
+      - name: Check Django environment
+        run: |
+          docker compose exec -T backend env | grep SECRET_KEY || true
+
       - name: Run migrations
         run: docker compose exec -T backend python manage.py migrate
 
       - name: Wait for frontend
         run: |
           for i in {1..30}; do
-            if curl -f http://localhost:5173; then
+            if curl -f http://localhost:5173/; then
               exit 0
             fi
             sleep 2
