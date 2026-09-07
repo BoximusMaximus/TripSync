@@ -59,6 +59,10 @@ jobs:
           echo "Frontend failed to start"
           exit 1
 
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
       - name: Run Cypress tests
         working-directory: frontend
         run: npx cypress run
