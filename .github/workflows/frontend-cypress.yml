@@ -105,6 +105,14 @@ jobs:
           install: true
           browser: chrome
           config: baseUrl=http://localhost:5173
+          
+      - name: Upload Cypress screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-screenshots
+          path: frontend/cypress/screenshots
+          if-no-files-found: ignore
 
       - name: Show Docker logs on failure
         if: failure()
