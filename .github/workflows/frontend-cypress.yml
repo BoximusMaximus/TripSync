@@ -79,6 +79,9 @@ jobs:
           docker compose logs frontend
           exit 1
 
+      - name: Reset frontend node_modules ownership
+        run: sudo rm -rf frontend/node_modules
+
       - name: Run Cypress tests
         uses: cypress-io/github-action@v6
         with:
