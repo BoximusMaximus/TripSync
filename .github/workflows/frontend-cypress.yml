@@ -24,7 +24,7 @@ jobs:
       - name: Create backend env
         run: |
           cat <<EOF > backend/.env
-          SECRET_KEY=test-secret-key
+          SECRET_KEY=DJANGO_SECRET_KEY
           DEBUG=True
           ALLOWED_HOSTS=localhost,127.0.0.1
           POSTGRES_DB=tripsync_db
