@@ -44,6 +44,22 @@ jobs:
         run: |
           docker compose exec -T backend env | grep SECRET_KEY || true
 
+      - name: Wait for database
+        run: |
+          for i in {1..30}; do
+            if docker compose exec -T db pg_isready -U tripsync_user -d tripsync_db; then
+              echo "Database is ready"
+              exit 0
+            fi
+
+            echo "Waiting for database..."
+            sleep 2
+          done
+
+          echo "Database failed to start"
+          docker compose logs db
+          exit 1
+
       - name: Run migrations
         run: docker compose exec -T backend python manage.py migrate
 
@@ -51,12 +67,16 @@ jobs:
         run: |
           for i in {1..30}; do
             if curl -f http://localhost:5173/; then
+              echo "Frontend is ready"
               exit 0
             fi
+
+            echo "Waiting for frontend..."
             sleep 2
           done
 
           echo "Frontend failed to start"
+          docker compose logs frontend
           exit 1
 
       - name: Install frontend dependencies
