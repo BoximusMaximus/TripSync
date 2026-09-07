@@ -37,11 +37,9 @@ jobs:
           AUTH_COOKIE_SAMESITE=Lax
           EOF
 
-      - name: Create frontend env
-        run: |
-          cat <<EOF > frontend/.env
-          VITE_GOOGLE_MAPS_API_KEY=test-dummy-key
-          EOF
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
 
       - name: Start Docker containers
         run: docker compose up -d --build
@@ -101,9 +99,6 @@ jobs:
           docker compose logs frontend
           exit 1
 
-      - name: Reset frontend node_modules ownership
-        run: sudo rm -rf frontend/node_modules
-
       - name: Run Cypress tests
         uses: cypress-io/github-action@v6
         with:
@@ -111,14 +106,6 @@ jobs:
           install: true
           browser: chrome
           config: baseUrl=http://localhost:5173
-
-      - name: Upload Cypress screenshots
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: cypress-screenshots
-          path: frontend/cypress/screenshots
-          if-no-files-found: ignore
 
       - name: Show Docker logs on failure
         if: failure()
