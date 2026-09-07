@@ -1,0 +1,68 @@
+name: Frontend Cypress Tests
+
+on:
+  push:
+    branches:
+      - frontend
+      - dev
+      - main
+
+  pull_request:
+    branches:
+      - frontend
+      - dev
+      - main
+
+jobs:
+  cypress:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create backend env
+        run: |
+          cat <<EOF > backend/.env
+          SECRET_KEY=test-secret-key
+          DEBUG=True
+          ALLOWED_HOSTS=localhost,127.0.0.1
+          POSTGRES_DB=tripsync_db
+          POSTGRES_USER=tripsync_user
+          POSTGRES_PASSWORD=tripsync_password
+          POSTGRES_HOST=db
+          POSTGRES_PORT=5432
+          REDIS_URL=redis://redis:6379/0
+          AUTH_COOKIE_SECURE=False
+          AUTH_COOKIE_SAMESITE=Lax
+          EOF
+
+      - name: Start Docker containers
+        run: docker compose up -d --build
+
+      - name: Run migrations
+        run: docker compose exec -T backend python manage.py migrate
+
+      - name: Wait for frontend
+        run: |
+          for i in {1..30}; do
+            if curl -f http://localhost:5173; then
+              exit 0
+            fi
+            sleep 2
+          done
+
+          echo "Frontend failed to start"
+          exit 1
+
+      - name: Run Cypress tests
+        working-directory: frontend
+        run: npx cypress run
+
+      - name: Show Docker logs on failure
+        if: failure()
+        run: docker compose logs
+
+      - name: Shut down containers
+        if: always()
+        run: docker compose down
