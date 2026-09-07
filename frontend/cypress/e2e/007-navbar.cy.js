@@ -53,7 +53,11 @@ describe("Navbar", () => {
   it("logs the user out", () => {
     cy.get('[data-cy="nav-logout"]').click();
 
-    cy.url().should("eq", Cypress.config("baseUrl"));
+    // Asserting on pathname instead of the full URL sidesteps trailing-slash
+    // formatting differences between Cypress.config("baseUrl") and what the
+    // browser actually reports after navigate("/") — both normalize to
+    // pathname "/" regardless of whether baseUrl itself has a trailing slash.
+    cy.location("pathname").should("eq", "/");
 
     cy.contains("Welcome back").should("be.visible");
 

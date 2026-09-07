@@ -105,7 +105,6 @@ jobs:
           working-directory: frontend
           install: true
           browser: chrome
-          config: baseUrl=http://localhost:5173
 
       - name: Show Docker logs on failure
         if: failure()
