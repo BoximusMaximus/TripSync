@@ -14,16 +14,15 @@ from pathlib import Path
 import os
 from datetime import timedelta
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
+
+
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
-# SECURITY WARNING: don't run with debug turned on in production!
+
 DEBUG = os.environ.get("DEBUG", "False") == "True"
 
 ALLOWED_HOSTS = os.environ.get(
@@ -91,8 +90,6 @@ SIMPLE_JWT = {
 }
 
 # Database
-# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
@@ -144,13 +141,12 @@ REST_FRAMEWORK = {
         "rest_framework.throttling.UserRateThrottle",
     ],
     "DEFAULT_THROTTLE_RATES": {
-        "anon": "100/min",
-        "user": "300/min",
+        "anon": "10/min",
+        "user": "100/min",
     },
 }
 
 # Password validation
-# https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
 
 AUTH_USER_MODEL = "auth_user_app.Auth_User"
 
@@ -171,7 +167,6 @@ AUTH_PASSWORD_VALIDATORS = [
 
 
 # Internationalization
-# https://docs.djangoproject.com/en/5.2/topics/i18n/
 
 LANGUAGE_CODE = "en-us"
 
@@ -183,12 +178,10 @@ USE_TZ = True
 
 
 # Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = "static/"
 
 # Default primary key field type
-# https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
@@ -196,6 +189,7 @@ EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
+    "https://tripsync.duckdns.org",
 ]
 
 CORS_ALLOW_CREDENTIALS = True
@@ -203,4 +197,5 @@ CORS_ALLOW_CREDENTIALS = True
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
+    "https://tripsync.duckdns.org",
 ]
