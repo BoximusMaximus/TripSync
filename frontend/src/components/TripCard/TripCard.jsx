@@ -23,10 +23,11 @@ export default function TripCard({
 
             <p className={tripLocationClass}>
                 {trip.city}, {trip.state}, {trip.country}
-                <span className={tripGroupTagClass}>{trip.group_name}</span>
+                {/* <span className={tripGroupTagClass}>{trip.group_name}</span> */}
             </p>
 
             <div className={tripActionsClass}>
+                {/* No trip-vote endpoint yet - parked until the backend adds one.
                 <button
                     className={
                         trip.has_voted ? tripVoteButtonOnClass : tripVoteButtonClass
@@ -35,7 +36,7 @@ export default function TripCard({
                     disabled={busy}
                 >
                     ▲ Vote · {trip.vote_count}
-                </button>
+                </button> */}
 
                 <Link to={`/trips/${trip.id}`} className={tripDetailsLinkClass}>
                     Details →

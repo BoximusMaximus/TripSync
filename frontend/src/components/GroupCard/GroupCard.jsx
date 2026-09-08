@@ -31,9 +31,11 @@ export default function GroupCard({
         <div className="Group_Card">
             <h3 className="Group_Name">{group.name}</h3>
             <p className="Members">
-                {group.member_count} members · created {group.created_on}
+                {group.member_count} members{/* · created {group.created_on} */}
             </p>
             <div className="Join_Group">
+                {/* No leave endpoint yet, and every listed group is one you
+                    already belong to, so Join / Leave is parked for now.
                 {group.is_member ? (
                     <button
                         className={groupLeaveButtonClass}
@@ -50,7 +52,7 @@ export default function GroupCard({
                     >
                         Join
                     </button>
-                )}
+                )} */}
                 <button className="View_Button" onClick={onViewClick}>
                     View
                 </button>

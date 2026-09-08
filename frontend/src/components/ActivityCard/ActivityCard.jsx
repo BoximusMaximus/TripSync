@@ -52,7 +52,7 @@ export default function ActivityCard({
                 />
 
                 <p className={activityAddressClass}>
-                    {activity.street} —{" "}
+                    {activity.formatted_address || activity.street} —{" "}
                     {activity.place_id ? "via Google Places" : "manual address (Geocoding)"}
                 </p>
 
@@ -95,7 +95,7 @@ export default function ActivityCard({
             <p className={activityDescriptionClass}>{activity.description}</p>
 
             <p className={activityAddressClass}>
-                {activity.street} —{" "}
+                {activity.formatted_address || activity.street} —{" "}
                 {activity.place_id ? "via Google Places" : "manual address (Geocoding)"}
             </p>
 
