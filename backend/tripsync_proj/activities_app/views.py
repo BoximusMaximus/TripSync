@@ -12,9 +12,12 @@ from .serializers import ActivitySerializer, LodgingSerializer
 
 LOCATION_FIELDS = ["street", "city", "state", "zip", "country"]
 
-#default search bias (metres): tight around a lodging address, wide around a city-sized destination
+#default search bias (metres): tight around a precise point, wide around a city-sized destination
 LODGING_RADIUS_M = 5000.0
 DESTINATION_RADIUS_M = 20000.0
+#google caps a locationBias circle at 50 km; the response reports the clamped value
+#so the map draws the area that was actually searched
+GOOGLE_MAX_RADIUS_M = 50000.0
 
 
 class ActivityView(APIView):
@@ -224,8 +227,11 @@ class ALodging(ActivityView):
 
 
 class FindActivities(ActivityView):
-    #endpoint: GET /api/v1/activities/search/?trip=<id>&query=<text>[&radius_m][&min_rating=4][&max_results=10]
-    #centered on the trip's lodging when one is set, else on the trip's destination (city/state/country)
+    #endpoint: GET /api/v1/activities/search/?trip=<id>&query=<text>
+    #          [&lat=&lng=][&radius_m][&min_rating=4][&max_results=10]
+    #center: an explicit lat/lng (the browser's geolocation) wins, else the trip's
+    #lodging, else the trip's destination. The response reports which center and what
+    #radius were used so the map can draw the area that was actually searched.
     def get(self, request):
         trip_id = request.query_params.get("trip")
         query = request.query_params.get("query", "").strip()
@@ -242,38 +248,77 @@ class FindActivities(ActivityView):
             max_results = int(request.query_params.get("max_results", 10))
             min_rating = request.query_params.get("min_rating")
             min_rating = float(min_rating) if min_rating else None
+            lat_param = request.query_params.get("lat")
+            lng_param = request.query_params.get("lng")
+            latitude = float(lat_param) if lat_param else None
+            longitude = float(lng_param) if lng_param else None
         except ValueError:
             return Response(
-                {"error": "radius_m, min_rating and max_results must be numbers"},
+                {"error": "lat, lng, radius_m, min_rating and max_results must be numbers"},
                 status=s.HTTP_400_BAD_REQUEST,
             )
-        center = self.search_center(trip)
+        #half a coordinate is a client bug, not a center - say so rather than
+        #silently falling back to the lodging and searching the wrong place
+        if (latitude is None) != (longitude is None):
+            return Response(
+                {"error": "lat and lng must be sent together"},
+                status=s.HTTP_400_BAD_REQUEST,
+            )
+        if latitude is not None and not (
+            -90 <= latitude <= 90 and -180 <= longitude <= 180
+        ):
+            return Response(
+                {"error": "lat must be between -90 and 90, lng between -180 and 180"},
+                status=s.HTTP_400_BAD_REQUEST,
+            )
+        center = self.search_center(trip, latitude, longitude)
         if center is None:
             return Response(
                 {"error": "Could not locate the trip destination - check the trip's city, state and country"},
                 status=s.HTTP_400_BAD_REQUEST,
             )
-        latitude, longitude, default_radius = center
+        center_lat, center_lng, default_radius, source = center
+        #clamp here too so the number reported back is the one google was given
+        used_radius = min(
+            max(radius_m if radius_m is not None else default_radius, 0.0),
+            GOOGLE_MAX_RADIUS_M,
+        )
         places = search_places(
             query,
-            latitude=latitude,
-            longitude=longitude,
-            radius_m=radius_m if radius_m is not None else default_radius,
+            latitude=center_lat,
+            longitude=center_lng,
+            radius_m=used_radius,
             min_rating=min_rating,
             max_results=max_results,
         )
         if places is None:
             #upstream failed - 502 says "google, not you"; CJs's 400 vocabulary would blame the client
             return Response({"error": "Place search failed"}, status=s.HTTP_502_BAD_GATEWAY)
-        return Response(places)
+        return Response(
+            {
+                "center": {
+                    #float() because a lodging's coordinates are Decimals, which DRF
+                    #would render as strings the map cannot use
+                    "latitude": float(center_lat),
+                    "longitude": float(center_lng),
+                    "source": source,
+                },
+                "radius_m": used_radius,
+                "places": places,
+            }
+        )
 
-    #helper - the lodging pin when set (tight bias), else the trip's destination geocoded (wide bias)
-    #returns (latitude, longitude, default_radius_m) or None when google cannot place the destination
-    def search_center(self, trip):
+    #helper - an explicit point (browser geolocation) wins, then the lodging pin (tight
+    #bias), then the trip's destination geocoded (wide bias)
+    #returns (latitude, longitude, default_radius_m, source) or None when google cannot
+    #place the destination
+    def search_center(self, trip, latitude=None, longitude=None):
+        if latitude is not None and longitude is not None:
+            return latitude, longitude, LODGING_RADIUS_M, "current_location"
         lodging = Lodging.objects.filter(trip=trip).first()
         if lodging is not None:
-            return lodging.latitude, lodging.longitude, LODGING_RADIUS_M
+            return lodging.latitude, lodging.longitude, LODGING_RADIUS_M, "lodging"
         geo = geocode_address(city=trip.city, state=trip.state, country=trip.country)
         if geo is None:
             return None
-        return geo["latitude"], geo["longitude"], DESTINATION_RADIUS_M
+        return geo["latitude"], geo["longitude"], DESTINATION_RADIUS_M, "trip"

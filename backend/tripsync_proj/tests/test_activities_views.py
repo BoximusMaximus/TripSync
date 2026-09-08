@@ -30,6 +30,8 @@ PLACES_RESULT = {"places": [{
     "displayName": {"text": "Pizza Place", "languageCode": "en"},
     "formattedAddress": "1 Pizza St, Honolulu, HI 96815, USA",
     "location": {"latitude": 21.28, "longitude": -157.83},
+    "rating": 4.6,
+    "userRatingCount": 312,
 }]}
 
 
@@ -483,11 +485,13 @@ class FindActivitiesTests(ActivityTestCase):
         resp = self.client.get(self.url, {"trip": self.trip.id, "query": "pizza"})
         with self.subTest():
             self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.data[0]["place_id"], "ChIJpizza")
+        self.assertEqual(resp.data["places"][0]["place_id"], "ChIJpizza")
+        self.assertEqual(resp.data["center"]["source"], "trip")
+        self.assertEqual(resp.data["radius_m"], 20000.0)                      #DESTINATION_RADIUS_M
         self.assertTrue(mock_get.call_args.args[0].endswith("/v4/geocode/address/Honolulu%2C%20HI%2C%20USA"))
         body = mock_post.call_args.kwargs["json"]
         self.assertEqual(body["locationBias"]["circle"]["center"], {"latitude": 21.284301, "longitude": -157.812345})
-        self.assertEqual(body["locationBias"]["circle"]["radius"], 20000.0)   #DESTINATION_RADIUS_M
+        self.assertEqual(body["locationBias"]["circle"]["radius"], 20000.0)
 
     #tests the happy path - results come back as a list and the search is biased to the lodging's pin
         # with a lodging set, google is never asked to geocode the destination
@@ -502,8 +506,15 @@ class FindActivitiesTests(ActivityTestCase):
         )
         with self.subTest():
             self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.data[0]["place_id"], "ChIJpizza")
-        self.assertEqual(resp.data[0]["name"], "Pizza Place")
+        self.assertEqual(resp.data["places"][0]["place_id"], "ChIJpizza")
+        self.assertEqual(resp.data["places"][0]["name"], "Pizza Place")
+        #the map pins render this - it has to survive the view, not just the helper
+        self.assertEqual(resp.data["places"][0]["rating"], 4.6)
+        self.assertEqual(resp.data["places"][0]["user_rating_count"], 312)
+        #the map draws this circle, so the response has to name the center it used
+        self.assertEqual(resp.data["center"]["source"], "lodging")
+        self.assertEqual(resp.data["center"]["latitude"], 21.275)
+        self.assertEqual(resp.data["radius_m"], 8047.0)
         mock_get.assert_not_called()
         body = mock_post.call_args.kwargs["json"]
         self.assertEqual(body["textQuery"], "pizza")
@@ -521,6 +532,65 @@ class FindActivitiesTests(ActivityTestCase):
         resp = self.client.get(self.url, {"trip": self.trip.id, "query": "pizza"})
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(mock_post.call_args.kwargs["json"]["locationBias"]["circle"]["radius"], 5000.0)
+
+    #tests "use my current location" - an explicit lat/lng outranks the lodging, no geocode,
+        # and the response names it so the map can draw the circle where the user is
+    @patch.dict("os.environ", GOOGLE_ENV)
+    @patch("requests.post")
+    @patch("requests.get")
+    def test_04c_explicit_latlng_wins_over_the_lodging(self, mock_get, mock_post):
+        make_lodging(self.trip)                                     #would otherwise be the center
+        mock_post.return_value = mock_google(200, PLACES_RESULT)
+        resp = self.client.get(
+            self.url,
+            {"trip": self.trip.id, "query": "pizza", "lat": 37.7749, "lng": -122.4194},
+        )
+        with self.subTest():
+            self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.data["center"]["source"], "current_location")
+        self.assertEqual(resp.data["center"]["latitude"], 37.7749)
+        self.assertEqual(resp.data["center"]["longitude"], -122.4194)
+        mock_get.assert_not_called()
+        body = mock_post.call_args.kwargs["json"]
+        self.assertEqual(
+            body["locationBias"]["circle"]["center"],
+            {"latitude": 37.7749, "longitude": -122.4194},
+        )
+
+    #tests the radius the map draws - a 50-mile request is reported back as google's 50 km cap,
+        # so the circle shows the area actually searched instead of the area asked for
+    @patch.dict("os.environ", GOOGLE_ENV)
+    @patch("requests.post")
+    def test_04d_radius_is_reported_clamped(self, mock_post):
+        make_lodging(self.trip)
+        mock_post.return_value = mock_google(200, PLACES_RESULT)
+        resp = self.client.get(
+            self.url, {"trip": self.trip.id, "query": "pizza", "radius_m": 80467}
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.data["radius_m"], 50000.0)
+        self.assertEqual(mock_post.call_args.kwargs["json"]["locationBias"]["circle"]["radius"], 50000.0)
+
+    #tests the half-a-coordinate guard - one of lat/lng is a client bug, not a center
+    @patch.dict("os.environ", GOOGLE_ENV)
+    @patch("requests.post")
+    @patch("requests.get")
+    def test_04e_lat_without_lng_is_400(self, mock_get, mock_post):
+        resp = self.client.get(self.url, {"trip": self.trip.id, "query": "pizza", "lat": 37.7749})
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.data, {"error": "lat and lng must be sent together"})
+        mock_get.assert_not_called()
+        mock_post.assert_not_called()
+
+    #tests the range guard - an out-of-range coordinate never reaches google
+    @patch.dict("os.environ", GOOGLE_ENV)
+    @patch("requests.post")
+    def test_04f_out_of_range_latlng_is_400(self, mock_post):
+        resp = self.client.get(
+            self.url, {"trip": self.trip.id, "query": "pizza", "lat": 99, "lng": 0}
+        )
+        self.assertEqual(resp.status_code, 400)
+        mock_post.assert_not_called()
 
     #tests the upstream-failure contract - google says no -> 502, not a 400 that blames the user
     @patch.dict("os.environ", GOOGLE_ENV)

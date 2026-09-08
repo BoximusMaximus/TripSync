@@ -58,6 +58,77 @@ const LOAD_TIMEOUT_MS = 8000;
 const AUTH_FAILURE_MESSAGE =
   "Google rejected the Maps key. In Cloud Console, check the key's HTTP-referrer list includes this site and the Maps JavaScript API is enabled for it.";
 
+// Search hits get a blue dot so they read as "not saved yet" against the default
+// red pin of a saved activity. A plain Symbol literal — no constructor and no
+// image URL — so there is nothing that can fail to load.
+const RESULT_MARKER_ICON = {
+  path: "M -7,0 a 7,7 0 1,0 14,0 a 7,7 0 1,0 -14,0",
+  fillColor: "#2563eb",
+  fillOpacity: 1,
+  strokeColor: "#ffffff",
+  strokeWeight: 2,
+  scale: 1,
+};
+
+// The point the search is measured from — the middle of the shaded circle.
+const CENTER_MARKER_ICON = {
+  path: "M -5,0 a 5,5 0 1,0 10,0 a 5,5 0 1,0 -10,0",
+  fillColor: "#0f7173",
+  fillOpacity: 1,
+  strokeColor: "#ffffff",
+  strokeWeight: 2,
+  scale: 1,
+};
+
+// Faint enough to read the map through, defined enough to see the edge.
+const SEARCH_CIRCLE_STYLE = {
+  fillColor: "#2563eb",
+  fillOpacity: 0.07,
+  strokeColor: "#2563eb",
+  strokeOpacity: 0.45,
+  strokeWeight: 1,
+  clickable: false,
+};
+
+// Place names and addresses come back from Google and go into an InfoWindow as
+// HTML, so they are escaped on the way in.
+const escapeHtml = (value) =>
+  String(value ?? "").replace(
+    /[&<>"']/g,
+    (character) =>
+      ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;",
+      })[character],
+  );
+
+// Native hover tooltip: the browser renders `title` with no extra API surface.
+const markerTitle = (pin) =>
+  pin.rating ? `${pin.name} — ★ ${pin.rating}` : pin.name || undefined;
+
+// Click card: the same information with room for the address and rating count.
+const infoWindowContent = (pin) => {
+  const rating = pin.rating
+    ? `<div style="margin-top:3px">★ ${escapeHtml(pin.rating)}${
+        pin.ratingCount
+          ? ` <span style="color:#6b7280">(${escapeHtml(pin.ratingCount)} reviews)</span>`
+          : ""
+      }</div>`
+    : pin.isResult
+      ? `<div style="margin-top:3px;color:#6b7280">No rating yet</div>`
+      : "";
+  const address = pin.address
+    ? `<div style="margin-top:3px;color:#6b7280">${escapeHtml(pin.address)}</div>`
+    : "";
+
+  return `<div style="font-size:13px;line-height:1.45;max-width:220px"><strong>${escapeHtml(
+    pin.name,
+  )}</strong>${rating}${address}</div>`;
+};
+
 /** Resolves a location to {lat, lng}, via Places when only a placeId is given. */
 const resolveLatLng = (libraries, location) =>
   new Promise((resolve) => {
@@ -108,6 +179,8 @@ const resolveLatLng = (libraries, location) =>
  */
 const MapView = ({
   locations = [],
+  results = [],
+  searchArea = null,
   isLoading = false,
   error = null,
   className,
@@ -115,6 +188,10 @@ const MapView = ({
   const mapNodeRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markersRef = useRef([]);
+  const circleRef = useRef(null);
+  // One InfoWindow for the whole map: opening it on a pin closes it on the
+  // previous one, which is what people expect from a map.
+  const infoWindowRef = useRef(null);
   const [loadStatus, setLoadStatus] = useState(
     hasGoogleMapsKey ? "loading" : "disabled",
   );
@@ -168,7 +245,9 @@ const MapView = ({
     };
   }, []);
 
-  // Plot markers whenever the map is ready or the location list changes.
+  // Plot the pins and the search circle whenever the map is ready or any of them
+  // change. One effect rather than two so the viewport can be fitted to both at
+  // once instead of each fighting the other for the zoom level.
   useEffect(() => {
     if (loadStatus !== "ready") return;
 
@@ -181,47 +260,107 @@ const MapView = ({
         marker.setMap(null);
       });
       markersRef.current = [];
+      infoWindowRef.current?.close();
+      circleRef.current?.setMap(null);
+      circleRef.current = null;
 
-      if (!locations.length) return;
+      const bounds = new libraries.LatLngBounds();
+      let hasBounds = false;
 
-      Promise.all(
-        locations.map((location) => resolveLatLng(libraries, location)),
-      ).then((positions) => {
-        if (isCancelled) return;
+      // The search area, drawn at the radius the server reported — i.e. the one
+      // Google was actually given, after its 50 km cap.
+      if (searchArea) {
+        const center = { lat: searchArea.lat, lng: searchArea.lng };
 
-        const bounds = new libraries.LatLngBounds();
-        let placed = 0;
-
-        positions.forEach((position, index) => {
-          if (!position) return;
-
-          const location = locations[index];
-          const marker = new libraries.Marker({
-            map: mapInstanceRef.current,
-            position,
-            title: location.name || undefined,
-          });
-
-          markersRef.current.push(marker);
-          bounds.extend(position);
-          placed += 1;
+        circleRef.current = new libraries.Circle({
+          ...SEARCH_CIRCLE_STYLE,
+          map: mapInstanceRef.current,
+          center,
+          radius: searchArea.radiusM,
         });
 
-        if (placed === 1) {
-          mapInstanceRef.current.setCenter(bounds.getCenter());
-          mapInstanceRef.current.setZoom(13);
-        } else if (placed > 1) {
-          mapInstanceRef.current.fitBounds(bounds);
+        const centerMarker = new libraries.Marker({
+          map: mapInstanceRef.current,
+          position: center,
+          title: "Search center",
+          icon: CENTER_MARKER_ICON,
+          zIndex: 3,
+        });
+        markersRef.current.push(centerMarker);
+
+        const circleBounds = circleRef.current.getBounds();
+        if (circleBounds) {
+          bounds.union(circleBounds);
+          hasBounds = true;
         }
-      });
+      }
+
+      // Saved activities first, search hits on top of them.
+      const pins = [
+        ...locations.map((location) => ({ ...location, isResult: false })),
+        ...results.map((result) => ({ ...result, isResult: true })),
+      ];
+
+      if (!pins.length) {
+        if (hasBounds) mapInstanceRef.current.fitBounds(bounds);
+        return;
+      }
+
+      Promise.all(pins.map((pin) => resolveLatLng(libraries, pin))).then(
+        (positions) => {
+          if (isCancelled) return;
+
+          if (!infoWindowRef.current) {
+            infoWindowRef.current = new libraries.InfoWindow();
+          }
+
+          let placed = 0;
+
+          positions.forEach((position, index) => {
+            if (!position) return;
+
+            const pin = pins[index];
+            const marker = new libraries.Marker({
+              map: mapInstanceRef.current,
+              position,
+              title: markerTitle(pin),
+              icon: pin.isResult ? RESULT_MARKER_ICON : undefined,
+              zIndex: pin.isResult ? 2 : 1,
+            });
+
+            marker.addListener("click", () => {
+              infoWindowRef.current.setContent(infoWindowContent(pin));
+              infoWindowRef.current.open({
+                map: mapInstanceRef.current,
+                anchor: marker,
+              });
+            });
+
+            markersRef.current.push(marker);
+            bounds.extend(position);
+            placed += 1;
+            hasBounds = true;
+          });
+
+          // A lone pin has no extent to fit to, so pick a readable zoom — unless
+          // a circle is on the map, whose bounds are the thing worth showing.
+          if (placed === 1 && !searchArea) {
+            mapInstanceRef.current.setCenter(bounds.getCenter());
+            mapInstanceRef.current.setZoom(15);
+          } else if (hasBounds) {
+            mapInstanceRef.current.fitBounds(bounds);
+          }
+        },
+      );
     });
 
     return () => {
       isCancelled = true;
     };
-  }, [loadStatus, locations]);
+  }, [loadStatus, locations, results, searchArea]);
 
-  const ariaLabel = `Map showing ${locations.length} activity location${locations.length === 1 ? "" : "s"}`;
+  const pinCount = locations.length + results.length;
+  const ariaLabel = `Map showing ${pinCount} location${pinCount === 1 ? "" : "s"}`;
 
   if (!hasGoogleMapsKey) {
     return (
@@ -249,7 +388,8 @@ const MapView = ({
 
   const showLoading = isLoading || loadStatus === "loading";
   const showError = Boolean(error) || loadStatus === "error";
-  const showEmpty = !showLoading && !showError && !locations.length;
+  // A circle with no pins is still something worth looking at.
+  const showEmpty = !showLoading && !showError && !pinCount && !searchArea;
 
   return (
     <div

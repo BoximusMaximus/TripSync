@@ -100,8 +100,13 @@ def search_places(query, latitude, longitude, radius_m=5000, min_rating=None, ma
             json=body,
             headers={
                 "X-Goog-Api-Key": api_key,
-                #REQUIRED on Places (New) - omitting it is an error, not "all fields"
-                "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,places.location",
+                #REQUIRED on Places (New) - omitting it is an error, not "all fields".
+                #BILLING: rating/userRatingCount move this call from the Pro to the
+                #Enterprise SKU. They are here because the map pins show the rating.
+                "X-Goog-FieldMask": (
+                    "places.id,places.displayName,places.formattedAddress,"
+                    "places.location,places.rating,places.userRatingCount"
+                ),
             },
             timeout=5,
         )
@@ -115,6 +120,10 @@ def search_places(query, latitude, longitude, radius_m=5000, min_rating=None, ma
                 "formatted_address": place.get("formattedAddress", ""),
                 "latitude": place["location"]["latitude"],
                 "longitude": place["location"]["longitude"],
+                #absent for places google has no rating for - null, not 0, so the UI
+                #can tell "unrated" from "rated zero"
+                "rating": place.get("rating"),
+                "user_rating_count": place.get("userRatingCount", 0),
             }
             for place in resp.json().get("places", [])
         ]

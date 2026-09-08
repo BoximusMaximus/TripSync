@@ -79,7 +79,7 @@
 | GET | `/api/v1/activities/lodging/<int:trip_id>/` | where the group is staying | the map center; 404 until set (the UI shows the lodging form) |
 | PUT | `/api/v1/activities/lodging/<int:trip_id>/` | set or replace the lodging | body: `name` (optional) and either `place_id` (Places pick) or an address; server geocodes — 201 first time, 200 on replace; 400 `{"error": "Provide a place_id or an address"}` if the body has neither; 400 `{"error": "Address could not be geocoded"}` if Google fails, with nothing written (first set: no row; replace: the old row stands); 404 unknown trip; replace, not merge — any address field not sent is reset to '' |
 | DELETE | `/api/v1/activities/lodging/<int:trip_id>/` | clear the lodging | 204 |
-| GET | `/api/v1/activities/search/` | Places Text Search around the lodging (or the trip's geocoded destination when no lodging is set) | params: `trip`, `query` (both required; missing → 400), `radius_m` (metres, default 5000, clamped to 0–50000), `min_rating` (0–5 in 0.5 steps, optional, passed through unvalidated), `max_results` (default 10, clamped to 1–20); non-numeric values → 400 `{"error": "radius_m, min_rating and max_results must be numbers"}`; 404 unknown trip; 400 `{"error": "Set where the group is staying first"}` if the trip has no lodging; 502 `{"error": "Place search failed"}` if Google fails; each hit: `place_id, name, formatted_address, latitude, longitude` |
+| GET | `/api/v1/activities/search/` | Places Text Search around an explicit `lat`/`lng` if sent, else the lodging, else the trip's geocoded destination | params: `trip`, `query` (both required; missing → 400), `lat`+`lng` (optional, sent together, the browser's geolocation), `radius_m` (metres, clamped to Google's 50 000), `min_rating` (0–5 in 0.5 steps, optional), `max_results` (default 10, clamped to 1–20); non-numeric or half-sent coordinates → 400. Returns `{center: {latitude, longitude, source}, radius_m, places: [...]}` — each place carries `place_id, name, formatted_address, latitude, longitude, rating, user_rating_count` |
 
 ### Activity votes
 
@@ -94,7 +94,7 @@ Both user stories from the original stand:
 
 > **Geocoding** — user is staying at an Airbnb with no Places entry. They type the lodging address; the server geocodes it inside `PUT /api/v1/activities/lodging/<trip_id>/` and stores lat/lng + place_id — the map center and the search bias. The same call is the manual-address fallback on activities.
 >
-> **Places search** — user wants restaurants near the Airbnb. Text query + max results + min rating + a circle (center from geocoding, radius chosen or preset). Powers `GET /api/v1/activities/search/?trip=&query=` — the circle's center is the trip's stored lodging.
+> **Places search** — user wants restaurants near the Airbnb. Text query + max results + min rating + a circle (center from geocoding, radius chosen or preset). Powers `GET /api/v1/activities/search/?trip=&query=` — the circle's center is the user's own location when they share it, else the trip's stored lodging, else the trip's geocoded destination. The response reports which, so the UI can draw the circle.
 
 Corrected call shapes:
 

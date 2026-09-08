@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import api from "../utilities";
 import ActivityCard from "../components/ActivityCard/ActivityCard";
@@ -22,13 +22,56 @@ import {
   tripFormRowClass,
   tripFormFieldClass,
   tripFormInputClass,
+  tripFormSelectClass,
   tripFormSubmitClass,
   tripFormCancelClass,
   placesResultsClass,
   placesResultButtonClass,
   placesResultAddressClass,
+  placesResultRatingClass,
+  placesRadiusNoteClass,
+  placesOriginRowClass,
+  placesOriginButtonClass,
+  placesOriginLabelClass,
+  placesOriginClearClass,
   placesSelectedClass,
 } from "./styles/tailwindStyles";
+
+// The API takes metres (Google's unit); the UI offers miles, so the conversion
+// lives here at the boundary.
+const MILES_TO_METRES = 1609.344;
+const RADIUS_OPTIONS_MILES = [1, 5, 10, 20, 50];
+const DEFAULT_RADIUS_MILES = 10;
+// Google clamps a locationBias circle to 50 km, so anything above ~31 miles
+// biases at 31. The bias is soft either way — strong matches outside the circle
+// still come back — but the UI says so rather than quietly rounding down.
+const GOOGLE_MAX_RADIUS_M = 50000;
+
+// What the map circle should be drawn at: what Google will actually be given.
+const biasRadiusMetres = (miles) =>
+  Math.min(Math.round(miles * MILES_TO_METRES), GOOGLE_MAX_RADIUS_M);
+
+// The server reports which center it used, so the label never guesses.
+const CENTER_LABELS = {
+  current_location: "your current location",
+  lodging: "where the group is staying",
+  trip: "the trip destination",
+};
+
+// navigator.geolocation reports failures by numeric code; say something the user
+// can act on instead of surfacing "User denied Geolocation".
+const geolocationMessage = (error) => {
+  if (error.code === error.PERMISSION_DENIED) {
+    return "Location permission was denied. Allow it in the browser's site settings, or search from the trip destination instead.";
+  }
+  if (error.code === error.POSITION_UNAVAILABLE) {
+    return "Your device could not determine a location right now.";
+  }
+  if (error.code === error.TIMEOUT) {
+    return "Timed out waiting for your location.";
+  }
+  return "Could not get your location.";
+};
 
 // Places search moved to the backend (activities/search/), which returns
 // place_id, name, formatted_address, latitude, longitude. The browser-side
@@ -80,6 +123,14 @@ export default function TripPage() {
   const [placeQuery, setPlaceQuery] = useState("");
   const [placeResults, setPlaceResults] = useState([]);
   const [placesLoading, setPlacesLoading] = useState(false);
+  const [radiusMiles, setRadiusMiles] = useState(DEFAULT_RADIUS_MILES);
+  // The user's own coordinates, once they ask for them. null = let the server pick
+  // the center (their lodging, or the trip's destination).
+  const [searchOrigin, setSearchOrigin] = useState(null);
+  const [locating, setLocating] = useState(false);
+  // The circle the map draws: after a search this is the server's answer, so it
+  // shows the area actually searched whichever center was used.
+  const [searchArea, setSearchArea] = useState(null);
   const [selectedPlace, setSelectedPlace] = useState(null);
   const [newActivity, setNewActivity] = useState(emptyActivity);
   const [submitting, setSubmitting] = useState(false);
@@ -124,6 +175,60 @@ export default function TripPage() {
     setNewActivity(emptyActivity);
     setManualAddress(false);
     setFormError("");
+    setSearchOrigin(null);
+    setSearchArea(null);
+  };
+
+  // Geolocation needs a secure context: it works on https:// and on localhost,
+  // and is simply absent elsewhere.
+  const handleUseMyLocation = () => {
+    if (!navigator.geolocation) {
+      setFormError("This browser cannot share a location.");
+      return;
+    }
+
+    setLocating(true);
+    setFormError("");
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const origin = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        };
+        setSearchOrigin(origin);
+        // Draw the circle straight away so the radius can be judged before
+        // spending a search on it.
+        setSearchArea({
+          ...origin,
+          radiusM: biasRadiusMetres(radiusMiles),
+          source: "current_location",
+        });
+        setLocating(false);
+      },
+      (error) => {
+        setFormError(geolocationMessage(error));
+        setLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
+    );
+  };
+
+  const handleClearOrigin = () => {
+    setSearchOrigin(null);
+    setSearchArea(null);
+  };
+
+  // Keep the preview circle in step with the dropdown while the origin is pinned.
+  const handleRadiusChange = (miles) => {
+    setRadiusMiles(miles);
+    if (searchOrigin) {
+      setSearchArea({
+        ...searchOrigin,
+        radiusM: biasRadiusMetres(miles),
+        source: "current_location",
+      });
+    }
   };
 
   const searchPlaces = async (event) => {
@@ -158,9 +263,26 @@ export default function TripPage() {
       // around the trip's own city/state/country. A 400 means Google could not
       // place the destination; a 502 means Google itself failed.
       const response = await api.get("activities/search/", {
-        params: { trip: tripId, query: placeQuery },
+        params: {
+          trip: tripId,
+          query: placeQuery,
+          radius_m: Math.round(radiusMiles * MILES_TO_METRES),
+          // Sent only when the user asked for their own location; otherwise the
+          // server chooses the center.
+          ...(searchOrigin
+            ? { lat: searchOrigin.lat, lng: searchOrigin.lng }
+            : {}),
+        },
       });
-      setPlaceResults(response.data);
+      setPlaceResults(response.data.places);
+      // The server's answer replaces any preview: it names the center it really
+      // used and the radius after Google's cap.
+      setSearchArea({
+        lat: response.data.center.latitude,
+        lng: response.data.center.longitude,
+        radiusM: response.data.radius_m,
+        source: response.data.center.source,
+      });
       setSelectedPlace(null);
     } catch (err) {
       setFormError(err.response?.data?.error || "Could not search places.");
@@ -183,12 +305,45 @@ export default function TripPage() {
     });
   };
 
+  // Saved activities: the permanent pins. Memoised because MapView re-plots
+  // whenever this array identity changes, and an inline .map() is a new array
+  // on every render.
+  const activityPins = useMemo(
+    () =>
+      activities.map((activity) => ({
+        id: `activity-${activity.id}`,
+        name: activity.name,
+        lat: activity.latitude,
+        lng: activity.longitude,
+        placeId: activity.place_id,
+        address: activity.formatted_address,
+      })),
+    [activities],
+  );
+
+  // Search hits: transient pins in a different colour. Once one is picked, only
+  // that one stays on the map so the user can see what they are about to add.
+  const resultPins = useMemo(() => {
+    const source = selectedPlace ? [selectedPlace] : placeResults;
+    return source.map((place) => ({
+      id: `result-${place.place_id}`,
+      name: place.name,
+      lat: place.latitude,
+      lng: place.longitude,
+      placeId: place.place_id,
+      address: place.formatted_address,
+      rating: place.rating,
+      ratingCount: place.user_rating_count,
+    }));
+  }, [placeResults, selectedPlace]);
+
   const handleToggleManual = () => {
     setManualAddress(!manualAddress);
     setPlaceQuery("");
     setPlaceResults([]);
     setSelectedPlace(null);
     setFormError("");
+    setSearchArea(null);
   };
 
   const handleAddActivity = async (event) => {
@@ -397,6 +552,34 @@ export default function TripPage() {
       {showAddForm && (
         <div className={tripFormClass}>
           {!manualAddress && (
+          <>
+          <div className={placesOriginRowClass}>
+            <button
+              className={placesOriginButtonClass}
+              type="button"
+              onClick={handleUseMyLocation}
+              disabled={locating}
+            >
+              {locating ? "Locating…" : "📍 Use my current location"}
+            </button>
+
+            <span className={placesOriginLabelClass}>
+              {searchArea
+                ? `Searching around ${CENTER_LABELS[searchArea.source] ?? "the trip destination"}`
+                : "Searching around the trip destination"}
+            </span>
+
+            {searchOrigin && (
+              <button
+                className={placesOriginClearClass}
+                type="button"
+                onClick={handleClearOrigin}
+              >
+                Use the trip destination instead
+              </button>
+            )}
+          </div>
+
           <form className={tripFormRowClass} onSubmit={searchPlaces}>
             <label className={tripFormFieldClass}>
               Find a place
@@ -408,6 +591,24 @@ export default function TripPage() {
                 placeholder="Search Google Places"
               />
             </label>
+
+            <label className={tripFormFieldClass}>
+              Within
+              <select
+                className={tripFormSelectClass}
+                value={radiusMiles}
+                onChange={(event) =>
+                  handleRadiusChange(Number(event.target.value))
+                }
+              >
+                {RADIUS_OPTIONS_MILES.map((miles) => (
+                  <option key={miles} value={miles}>
+                    {miles} {miles === 1 ? "mile" : "miles"}
+                  </option>
+                ))}
+              </select>
+            </label>
+
             <button
               className={tripFormSubmitClass}
               type="submit"
@@ -416,6 +617,14 @@ export default function TripPage() {
               {placesLoading ? "Searching..." : "Search"}
             </button>
           </form>
+
+          {radiusMiles * MILES_TO_METRES > GOOGLE_MAX_RADIUS_M && (
+            <p className={placesRadiusNoteClass}>
+              Google caps the search area at 50 km (~31 miles), so this searches
+              about 31 miles out. Strong matches further away can still appear.
+            </p>
+          )}
+          </>
           )}
 
           {placeResults.length > 0 && (
@@ -428,6 +637,14 @@ export default function TripPage() {
                   onClick={() => handleSelectPlace(place)}
                 >
                   {place.name}
+                  {place.rating ? (
+                    <span className={placesResultRatingClass}>
+                      ★ {place.rating}
+                      {place.user_rating_count
+                        ? ` (${place.user_rating_count})`
+                        : ""}
+                    </span>
+                  ) : null}
                   <span className={placesResultAddressClass}>
                     {place.formatted_address}
                   </span>
@@ -438,7 +655,9 @@ export default function TripPage() {
 
           {selectedPlace && (
             <p className={placesSelectedClass}>
-              {selectedPlace.name} · {selectedPlace.formatted_address}
+              {selectedPlace.name}
+              {selectedPlace.rating ? ` · ★ ${selectedPlace.rating}` : ""} ·{" "}
+              {selectedPlace.formatted_address}
             </p>
           )}
 
@@ -603,16 +822,14 @@ export default function TripPage() {
           </div> */}
           <MapView
             className={tripDetailMapSlotClass}
-            locations={activities.map((activity) => ({
-              id: activity.id,
-              name: activity.name,
-              lat: activity.latitude,
-              lng: activity.longitude,
-              placeId: activity.place_id,
-            }))}
+            locations={activityPins}
+            results={resultPins}
+            searchArea={searchArea}
           />
           <p className={tripDetailMapNoteClass}>
-            Cost is a user-entered estimate · votes decide the itinerary
+            Saved activities are red pins; search results are blue. Click a pin
+            for its name, rating and address. The shaded circle is the area being
+            searched.
           </p>
         </div>
       </div>
