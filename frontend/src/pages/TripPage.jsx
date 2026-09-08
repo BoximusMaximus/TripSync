@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import api from "../utilities";
 import ActivityCard from "../components/ActivityCard/ActivityCard";
-// import { mockTrips, mockActivities, mockPlaces } from "../fixture/mockData";
+import MapView from "../components/GoogleMapSnippet";
 import {
   tripDetailPageClass,
   tripDetailHeaderClass,
@@ -30,31 +30,33 @@ import {
   placesSelectedClass,
 } from "./styles/tailwindStyles";
 
+// Places search moved to the backend (activities/search/), which returns
+// place_id, name, formatted_address, latitude, longitude. The browser-side
+// address parsing below is kept for reference only.
+// const componentText = (components, type, field) => {
+  // const match = components.find((component) => component.types.includes(type));
+  // return match ? match[field] : "";
+// };
 
-const componentText = (components, type, field) => {
-  const match = components.find((component) => component.types.includes(type));
-  return match ? match[field] : "";
-};
+// // Google Places (New) returns addressComponents as [{ longText, shortText, types }].
+// // street_number + route -> street, locality -> city,
+// // administrative_area_level_1 -> state, postal_code -> zip, country -> country.
+// const flattenPlace = (place) => {
+  // const components = place.addressComponents || [];
+  // const streetNumber = componentText(components, "street_number", "shortText");
+  // const route = componentText(components, "route", "shortText");
 
-// Google Places (New) returns addressComponents as [{ longText, shortText, types }].
-// street_number + route -> street, locality -> city,
-// administrative_area_level_1 -> state, postal_code -> zip, country -> country.
-const flattenPlace = (place) => {
-  const components = place.addressComponents || [];
-  const streetNumber = componentText(components, "street_number", "shortText");
-  const route = componentText(components, "route", "shortText");
-
-  return {
-    place_id: place.id,
-    name: place.displayName.text,
-    formatted_address: place.formattedAddress,
-    street: `${streetNumber} ${route}`.trim(),
-    city: componentText(components, "locality", "longText"),
-    state: componentText(components, "administrative_area_level_1", "shortText"),
-    zip: componentText(components, "postal_code", "longText"),
-    country: componentText(components, "country", "longText"),
-  };
-};
+  // return {
+    // place_id: place.id,
+    // name: place.displayName.text,
+    // formatted_address: place.formattedAddress,
+    // street: `${streetNumber} ${route}`.trim(),
+    // city: componentText(components, "locality", "longText"),
+    // state: componentText(components, "administrative_area_level_1", "shortText"),
+    // zip: componentText(components, "postal_code", "longText"),
+    // country: componentText(components, "country", "longText"),
+  // };
+// };
 
 const emptyActivity = {
   name: "",
@@ -91,20 +93,18 @@ export default function TripPage() {
   });
   const [busyActivityId, setBusyActivityId] = useState(null);
 
-//   const loadTrip = async () => {
-//     setLoading(true);
-//     setError("");
+  const loadTrip = async () => {
+    setLoading(true);
+    setError("");
 
     try {
       const tripResponse = await api.get(`trips/${tripId}/`);
       setTrip(tripResponse.data);
-      const activityResponse = await api.get(`trips/${tripId}/activities/`);
+      // const activityResponse = await api.get(`trips/${tripId}/activities/`);
+      const activityResponse = await api.get("activities/", {
+        params: { trip: tripId },
+      });
       setActivities(activityResponse.data);
-      // const foundTrip = mockTrips.find((item) => item.id === Number(tripId));
-      // setTrip(foundTrip || null);
-      // setActivities(
-      //   mockActivities.filter((item) => item.trip_id === Number(tripId)),
-      // );
     } catch (err) {
       setError("Could not load trip.");
     } finally {
@@ -112,10 +112,9 @@ export default function TripPage() {
     }
   };
 
-//   useEffect(() => {
-//     loadTrip();
-//   }, [tripId]);
-
+  useEffect(() => {
+    loadTrip();
+  }, [tripId]);
 
   const resetAddForm = () => {
     setShowAddForm(false);
@@ -138,25 +137,33 @@ export default function TripPage() {
     setFormError("");
 
     try {
-      const response = await fetch(
-        "https://places.googleapis.com/v1/places:searchText",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Goog-Api-Key": import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
-            "X-Goog-FieldMask":
-              "places.id,places.displayName,places.formattedAddress,places.addressComponents",
-          },
-          body: JSON.stringify({ textQuery: placeQuery, maxResultCount: 5 }),
-        },
-      );
-      const data = await response.json();
-      setPlaceResults((data.places || []).map(flattenPlace));
-      setPlaceResults(mockPlaces.map(flattenPlace));
+      // const response = await fetch(
+        // "https://places.googleapis.com/v1/places:searchText",
+        // {
+          // method: "POST",
+          // headers: {
+            // "Content-Type": "application/json",
+            // "X-Goog-Api-Key": import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
+            // "X-Goog-FieldMask":
+              // "places.id,places.displayName,places.formattedAddress,places.addressComponents",
+          // },
+          // body: JSON.stringify({ textQuery: placeQuery, maxResultCount: 5 }),
+        // },
+      // );
+      // const data = await response.json();
+      // setPlaceResults((data.places || []).map(flattenPlace));
+
+      // The server searches Google around the trip's lodging. Until a
+      // lodging is set for the trip (PUT activities/lodging/<trip_id>/ - no
+      // form for it yet) this answers 400 "Set where the group is staying
+      // first", which is shown below. Manual address entry works without it.
+      const response = await api.get("activities/search/", {
+        params: { trip: tripId, query: placeQuery },
+      });
+      setPlaceResults(response.data);
       setSelectedPlace(null);
     } catch (err) {
-      setFormError("Could not search places.");
+      setFormError(err.response?.data?.error || "Could not search places.");
     } finally {
       setPlacesLoading(false);
     }
@@ -193,32 +200,33 @@ export default function TripPage() {
     setSubmitting(true);
     setFormError("");
 
+    // A Places pick sends only place_id; the server geocodes it and stores
+    // the address. A manual entry sends the typed fields and no place_id.
     const payload = {
+      trip: Number(tripId),
       name: newActivity.name,
       description: newActivity.description,
-      street: manualAddress ? newActivity.street : selectedPlace.street,
-      city: manualAddress ? newActivity.city : selectedPlace.city,
-      state: manualAddress ? newActivity.state : selectedPlace.state,
-      zip: manualAddress ? newActivity.zip : selectedPlace.zip,
-      country: manualAddress ? newActivity.country : selectedPlace.country,
+      // street: manualAddress ? newActivity.street : selectedPlace.street,
+      // city: manualAddress ? newActivity.city : selectedPlace.city,
+      // state: manualAddress ? newActivity.state : selectedPlace.state,
+      // zip: manualAddress ? newActivity.zip : selectedPlace.zip,
+      // country: manualAddress ? newActivity.country : selectedPlace.country,
+      street: manualAddress ? newActivity.street : "",
+      city: manualAddress ? newActivity.city : "",
+      state: manualAddress ? newActivity.state : "",
+      zip: manualAddress ? newActivity.zip : "",
+      country: manualAddress ? newActivity.country : "",
       place_id: manualAddress ? "" : selectedPlace.place_id,
       cost_estimate_cents: Math.round(Number(newActivity.cost || 0) * 100),
     };
 
     try {
-      const response = await api.post(`trips/${tripId}/activities/`, payload);
+      // const response = await api.post(`trips/${tripId}/activities/`, payload);
+      const response = await api.post("activities/", payload);
       setActivities([...activities, response.data]);
-      const fakeActivity = {
-        id: Date.now(),
-        trip_id: Number(tripId),
-        ...payload,
-        vote_count: 0,
-        has_voted: false,
-      };
-      setActivities([...activities, fakeActivity]);
       resetAddForm();
     } catch (err) {
-      setFormError("Could not add activity.");
+      setFormError(err.response?.data?.error || "Could not add activity.");
     } finally {
       setSubmitting(false);
     }
@@ -258,10 +266,6 @@ export default function TripPage() {
     try {
       const response = await api.patch(`activities/${activityId}/`, payload);
       const savedActivity = response.data;
-      // const savedActivity = {
-      //   ...activities.find((activity) => activity.id === activityId),
-      //   ...payload,
-      // };
       setActivities(
         activities.map((activity) =>
           activity.id === activityId ? savedActivity : activity,
@@ -298,24 +302,35 @@ export default function TripPage() {
     }
   };
 
-
   const handleVoteActivity = async (activity) => {
     setBusyActivityId(activity.id);
     setFormError("");
 
     try {
+      // if (activity.has_voted) {
+      //   await api.delete(`activities/${activity.id}/vote/`);
+      // } else {
+      //   await api.post(`activities/${activity.id}/vote/`);
+      // }
+      // const updatedActivity = {
+      //   ...activity,
+      //   has_voted: !activity.has_voted,
+      //   vote_count: activity.has_voted
+      //     ? activity.vote_count - 1
+      //     : activity.vote_count + 1,
+      // };
+      let updatedActivity;
       if (activity.has_voted) {
         await api.delete(`activities/${activity.id}/vote/`);
+        updatedActivity = {
+          ...activity,
+          has_voted: false,
+          vote_count: activity.vote_count - 1,
+        };
       } else {
-        await api.post(`activities/${activity.id}/vote/`);
+        const response = await api.post(`activities/${activity.id}/vote/`);
+        updatedActivity = response.data;
       }
-      const updatedActivity = {
-        ...activity,
-        has_voted: !activity.has_voted,
-        vote_count: activity.has_voted
-          ? activity.vote_count - 1
-          : activity.vote_count + 1,
-      };
       setActivities(
         activities.map((item) =>
           item.id === activity.id ? updatedActivity : item,
@@ -336,32 +351,32 @@ export default function TripPage() {
     );
   }
 
-//   if (error) {
-//     return (
-//       <div className={tripDetailPageClass}>
-//         <p className={tripDetailErrorClass}>{error}</p>
-//       </div>
-//     );
-//   }
+  if (error) {
+    return (
+      <div className={tripDetailPageClass}>
+        <p className={tripDetailErrorClass}>{error}</p>
+      </div>
+    );
+  }
 
-//   if (!trip) {
-//     return (
-//       <div className={tripDetailPageClass}>
-//         <p className={tripDetailStatusClass}>Trip not found.</p>
-//         <Link to="/trips">Back to trips</Link>
-//       </div>
-//     );
-//   }
+  if (!trip) {
+    return (
+      <div className={tripDetailPageClass}>
+        <p className={tripDetailStatusClass}>Trip not found.</p>
+        <Link to="/trips">Back to trips</Link>
+      </div>
+    );
+  }
 
-//   return (
-//     <div className={tripDetailPageClass}>
-//       <div className={tripDetailHeaderClass}>
-//         <div>
-//           <h1 className={tripDetailTitleClass}>{trip.name}</h1>
-//           <p className={tripDetailLocationClass}>
-//             {trip.city}, {trip.state}, {trip.country}
-//           </p>
-//         </div>
+  return (
+    <div className={tripDetailPageClass}>
+      <div className={tripDetailHeaderClass}>
+        <div>
+          <h1 className={tripDetailTitleClass}>{trip.name}</h1>
+          <p className={tripDetailLocationClass}>
+            {trip.city}, {trip.state}, {trip.country}
+          </p>
+        </div>
 
         <div className={tripDetailActionsClass}>
           <button className={tripDetailEditButtonClass}>Edit Trip</button>
@@ -421,6 +436,7 @@ export default function TripPage() {
               {selectedPlace.name} · {selectedPlace.formatted_address}
             </p>
           )}
+
           <button
             className={tripFormCancelClass}
             type="button"
@@ -430,6 +446,7 @@ export default function TripPage() {
               ? "Search Google Places instead"
               : "Enter address manually"}
           </button>
+
           <form className={tripFormRowClass} onSubmit={handleAddActivity}>
             <label className={tripFormFieldClass}>
               Name
@@ -547,6 +564,7 @@ export default function TripPage() {
           {formError && <p className={tripDetailErrorClass}>{formError}</p>}
         </div>
       )}
+
       <div className={tripDetailColumnsClass}>
         <div className={tripDetailLeftClass}>
           {activities.length === 0 && (
@@ -574,15 +592,25 @@ export default function TripPage() {
           ))}
         </div>
 
-//         <div className={tripDetailRightClass}>
-//           <div className={tripDetailMapSlotClass}>
-//             Google Map — activity pins (Places ID)
-//           </div>
-//           <p className={tripDetailMapNoteClass}>
-//             Cost is a user-entered estimate · votes decide the itinerary
-//           </p>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// }
+        <div className={tripDetailRightClass}>
+          {/* <div className={tripDetailMapSlotClass}>
+            Google Map — activity pins (Places ID)
+          </div> */}
+          <MapView
+            className={tripDetailMapSlotClass}
+            locations={activities.map((activity) => ({
+              id: activity.id,
+              name: activity.name,
+              lat: activity.latitude,
+              lng: activity.longitude,
+              placeId: activity.place_id,
+            }))}
+          />
+          <p className={tripDetailMapNoteClass}>
+            Cost is a user-entered estimate · votes decide the itinerary
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
