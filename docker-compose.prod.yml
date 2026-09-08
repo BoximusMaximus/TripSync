@@ -27,6 +27,8 @@ services:
     build: ./frontend
     container_name: react-container
     restart: unless-stopped
+    env_file:
+      - ./frontend/.env
     ports:
       - "80:80"
       - "443:443"
