@@ -97,6 +97,7 @@ erDiagram
         string name
         string city
         string state
+        string zip
         string country
     }
     ACTIVITIES {
@@ -157,7 +158,7 @@ erDiagram
 | `auth_user` | Custom user model (`auth_user_app.Auth_User`, extends `AbstractUser`; bigint pk) | username, email |
 | `groups` | A travel group | name, created_on |
 | `memberships` | User ↔ Group join table | read_access, write_access, is_leader · unique (user, group) |
-| `trips` | A candidate/planned trip, belongs to a group | name, city, state, country |
+| `trips` | A candidate/planned trip, belongs to a group | name, city, state, zip (optional), country |
 | `activities` | An activity, belongs to a trip | name, address fields (optional), place_id (server-written), cost_estimate_cents, description, created_at/updated_at |
 | `activity_geocodes` | Google Geocoding's answer for an activity's location (server-written, one per located activity) | latitude, longitude, formatted_address · unique (activity) |
 | `lodgings` | Where the group is staying — one per trip; the map centers here and place search is biased here | name (optional), address fields (optional — or a place_id pick), place_id / latitude / longitude / formatted_address (server-written from Geocoding) · unique (trip) |

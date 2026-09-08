@@ -14,12 +14,18 @@ const api = axios.create({
   xsrfHeaderName: "X-CSRFToken",
 });
 
+// Same cookie + CSRF config as the api instance (and services/client.js): the
+// refresh is a POST, and a still-present access cookie makes the server run the
+// CSRF check on it.
 const refreshAccessToken = () => {
   return axios.post(
     "/api/v1/users/token/refresh/",
     {},
     {
       withCredentials: true,
+      withXSRFToken: true,
+      xsrfCookieName: "csrftoken",
+      xsrfHeaderName: "X-CSRFToken",
     },
   );
 };

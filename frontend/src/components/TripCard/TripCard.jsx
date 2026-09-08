@@ -22,7 +22,7 @@ export default function TripCard({
             <h3 className={tripNameClass}>{trip.name}</h3>
 
             <p className={tripLocationClass}>
-                {trip.city}, {trip.state}, {trip.country}
+                {trip.city}, {trip.state}{trip.zip ? ` ${trip.zip}` : ""}, {trip.country}
                 {/* <span className={tripGroupTagClass}>{trip.group_name}</span> */}
             </p>
 

@@ -5,5 +5,5 @@ from .models import Trip
 class TripSerializer(serializers.ModelSerializer):
     class Meta:
         model = Trip
-        fields = ["id", "name", "city", "state", "country"]
+        fields = ["id", "name", "city", "state", "zip", "country"]
         read_only_fields = ["id"]

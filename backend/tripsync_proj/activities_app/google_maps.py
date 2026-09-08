@@ -1,7 +1,11 @@
+import logging
 import os
 from urllib.parse import quote
 
 import requests
+
+#google's rejections (bad key, API not enabled, IP restriction) surface here, not in the 400/502 the user sees
+logger = logging.getLogger(__name__)
 
 GEOCODE_PLACE_URL = "https://geocode.googleapis.com/v4/geocode/places/{place_id}"
 GEOCODE_ADDRESS_URL = "https://geocode.googleapis.com/v4/geocode/address/{address}"
@@ -31,6 +35,7 @@ def geocode_address(street="", city="", state="", zip_code="", country="", place
                 timeout=5,
             )
             if resp.status_code != 200:
+                logger.warning("geocode place %s -> HTTP %s", place_id, resp.status_code)
                 return None
             result = resp.json()
         else:
@@ -53,9 +58,11 @@ def geocode_address(street="", city="", state="", zip_code="", country="", place
                 timeout=5,
             )
             if resp.status_code != 200:
+                logger.warning("geocode address %r -> HTTP %s", text, resp.status_code)
                 return None
             results = resp.json().get("results", [])
             if not results:
+                logger.info("geocode address %r -> no results", text)
                 return None
             result = results[0]
         return {
@@ -64,8 +71,9 @@ def geocode_address(street="", city="", state="", zip_code="", country="", place
             "formatted_address": result.get("formattedAddress", ""),
             "place_id": result.get("placeId", ""),
         }
-    except (requests.RequestException, KeyError, TypeError, ValueError):
+    except (requests.RequestException, KeyError, TypeError, ValueError) as exc:
         #failure is a value, not a crash - the view turns None into a 400
+        logger.warning("geocode call failed: %s", exc)
         return None
 
 
@@ -92,12 +100,18 @@ def search_places(query, latitude, longitude, radius_m=5000, min_rating=None, ma
             json=body,
             headers={
                 "X-Goog-Api-Key": api_key,
-                #REQUIRED on Places (New) - omitting it is an error, not "all fields"
-                "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,places.location",
+                #REQUIRED on Places (New) - omitting it is an error, not "all fields".
+                #BILLING: rating/userRatingCount move this call from the Pro to the
+                #Enterprise SKU. They are here because the map pins show the rating.
+                "X-Goog-FieldMask": (
+                    "places.id,places.displayName,places.formattedAddress,"
+                    "places.location,places.rating,places.userRatingCount"
+                ),
             },
             timeout=5,
         )
         if resp.status_code != 200:
+            logger.warning("places search %r -> HTTP %s", query, resp.status_code)
             return None
         return [
             {
@@ -106,9 +120,14 @@ def search_places(query, latitude, longitude, radius_m=5000, min_rating=None, ma
                 "formatted_address": place.get("formattedAddress", ""),
                 "latitude": place["location"]["latitude"],
                 "longitude": place["location"]["longitude"],
+                #absent for places google has no rating for - null, not 0, so the UI
+                #can tell "unrated" from "rated zero"
+                "rating": place.get("rating"),
+                "user_rating_count": place.get("userRatingCount", 0),
             }
             for place in resp.json().get("places", [])
         ]
-    except (requests.RequestException, KeyError, TypeError, ValueError):
+    except (requests.RequestException, KeyError, TypeError, ValueError) as exc:
         #failure is a value, not a crash - the view turns None into a 502
+        logger.warning("places search call failed: %s", exc)
         return None

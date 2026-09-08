@@ -196,6 +196,23 @@ export const placesResultButtonClass =
 
 export const placesResultAddressClass = "block text-[13px] text-gray-500";
 
+export const placesResultRatingClass =
+  "ml-2 text-[13px] font-medium text-amber-600";
+
+export const placesRadiusNoteClass =
+  "mt-2 text-[12px] text-gray-500";
+
+export const placesOriginRowClass =
+  "mb-3 flex flex-wrap items-center gap-x-3 gap-y-2";
+
+export const placesOriginButtonClass =
+  "px-3 py-[7px] text-[13px] font-medium text-[#0f7173] border border-[#0f7173]/40 rounded-md bg-white cursor-pointer hover:bg-[#f6fbfb] disabled:text-gray-400 disabled:border-gray-200 disabled:cursor-not-allowed";
+
+export const placesOriginLabelClass = "text-[13px] text-gray-600";
+
+export const placesOriginClearClass =
+  "text-[13px] text-gray-500 underline cursor-pointer hover:text-gray-900";
+
 export const placesSelectedClass =
   "mt-3 rounded-md border border-[#0f7173]/30 bg-[#f6fbfb] px-3 py-2 text-sm text-[#1a1a1a]";
 

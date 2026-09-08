@@ -72,7 +72,7 @@ Base path: `/api/v1/trips/` (`tripsync_proj/urls.py` -> `trip_app.urls`). All re
 | PUT    | `/api/v1/trips/<trip_id>/` | `TripById` | Full update via `TripSerializer`. `400` with field errors on bad input. |
 | DELETE | `/api/v1/trips/<trip_id>/` | `TripById` | Deletes the trip, returns `204`. |
 
-`TripSerializer` (`serializers.py`) exposes `id`, `name`, `city`, `state`, `country` (`id` read-only).
+`TripSerializer` (`serializers.py`) exposes `id`, `name`, `city`, `state`, `zip` (optional, `""` when not given), `country` (`id` read-only).
 
 **Note for the team:** no ownership/membership check yet on `TripById` — any authenticated user can GET/PUT/DELETE any trip by ID, not just trips they belong to. Fine for now, worth tightening later.
 
@@ -109,7 +109,22 @@ Base path: `/api/v1/activities/` (`tripsync_proj/urls.py` -> `activities_app.url
 | GET | `/api/v1/activities/lodging/<trip_id>/` | `ALodging` | 404 until set |
 | PUT | `/api/v1/activities/lodging/<trip_id>/` | `ALodging` | 201 first set / 200 replace; always geocodes; 400 if no location or Google fails (nothing written — the old row survives a failed replace); 404 unknown trip |
 | DELETE | `/api/v1/activities/lodging/<trip_id>/` | `ALodging` | 204; 404 if not set |
-| GET | `/api/v1/activities/search/?trip=<id>&query=<text>` | `FindActivities` | list of places around the lodging; 400 if no lodging; 502 if Google fails |
+| GET | `/api/v1/activities/search/?trip=<id>&query=<text>` | `FindActivities` | Places search. Center: `lat`+`lng` if sent (the browser's geolocation), else the trip's lodging, else the trip's geocoded city/state/country. Optional `radius_m` (clamped to Google's 50 km), `min_rating`, `max_results`. 400 if the destination cannot be located, or `lat`/`lng` is half-sent or out of range; 502 if Google fails |
+
+`FindActivities` returns an object, not a bare list, so the map can draw the area that was searched:
+
+```json
+{
+  "center": { "latitude": 21.2782, "longitude": -157.8324, "source": "lodging" },
+  "radius_m": 8047.0,
+  "places": [
+    { "place_id": "ChIJ...", "name": "Luigi's Pizza", "formatted_address": "...",
+      "latitude": 21.2795, "longitude": -157.8262, "rating": 4.4, "user_rating_count": 312 }
+  ]
+}
+```
+
+`center.source` is `current_location`, `lodging` or `trip`. `radius_m` is what Google was actually given (after its 50 km cap), so the circle on the map is honest. `rating` is `null` for places Google has no rating for — note that requesting `rating`/`userRatingCount` puts this call on the Places API (New) **Enterprise** SKU rather than Pro.
 
 ## Created User Tests
 Inside of our "tripsync_proj", youll find a "tests" directory with a backend test.
