@@ -94,13 +94,13 @@ const NavBar = ({ user, setUser }) => {
             </div>
 
             <div className={navRightClass}>
-              {/* <NavLink
+              <NavLink
                 to="/profile"
                 className={getNavLinkClass}
                 data-cy="nav-profile"
               >
                 Profile
-              </NavLink> */}
+              </NavLink>
 
               <button
                 type="button"
