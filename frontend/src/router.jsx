@@ -6,9 +6,9 @@ import SignUpPage from "./pages/SignUpPage";
 import HomePage from "./pages/HomePage";
 import AboutPage from "./pages/AboutPage";
 import GroupsPage from "./pages/GroupsPage";
-
-// import TripsPage from "./pages/TripsPage";
-// import TripPage from "./pages/TripPage";
+import ProfilePage from "./pages/profilePage";
+import TripsPage from "./pages/TripsPage";
+import TripPage from "./pages/TripPage";
 
 import NotFoundPage from "./pages/NotFoundPage";
 
@@ -48,6 +48,21 @@ const router = createBrowserRouter([
       {
         path: "groups",
         element: <GroupsPage />,
+        loader: requireLogin,
+      },
+      {
+        path: "trips",
+        element: <TripsPage />,
+        loader: requireLogin,
+      },
+      {
+        path: "trips/:tripId",
+        element: <TripPage />,
+        loader: requireLogin,
+      },
+      {
+        path: "/profile",
+        element: <ProfilePage />,
       },
       {
         path: "*",

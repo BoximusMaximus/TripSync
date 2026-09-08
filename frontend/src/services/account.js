@@ -59,11 +59,15 @@ export const logIn = async (username, password) => {
 export const userConfirmation = async () => {
   try {
     const response = await client.get("info/");
-
     return response.data;
   } catch (error) {
-    console.error(errorMessage(error));
+    
+    if (error.response?.status === 401) {
+      return null;
+    }
 
+    
+    console.error(errorMessage(error));
     return null;
   }
 };
