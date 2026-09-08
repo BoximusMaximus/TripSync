@@ -1,29 +1,28 @@
-// import { useEffect, useState } from "react";
-// import api from "../utilities";
-// import {
-//   mockTrips,
-//   mockActivities,
-// } from "../fixture/mockData";
-// import TripCard from "../components/TripCard/TripCard";
+import { useEffect, useState } from "react";
+import api from "../utilities";
+// import { mockTrips, mockGroups } from "../fixture/mockData";
+import TripCard from "../components/TripCard/TripCard";
 
-// import {
-//   tripsPageClass,
-//   tripsHeaderClass,
-//   tripsTitleClass,
-//   tripsSubtitleClass,
-//   tripsNewButtonClass,
-//   tripsGridClass,
-//   tripsStatusClass,
-//   tripsErrorClass,
-//   tripsFooterNoteClass,
-//   tripFormClass,
-//   tripFormRowClass,
-//   tripFormFieldClass,
-//   tripFormInputClass,
-//   tripFormSelectClass,
-//   tripFormSubmitClass,
-//   tripFormCancelClass,
-// } from "./styles/tailwindStyles";
+import {
+  tripsPageClass,
+  tripsHeaderClass,
+  tripsTitleClass,
+  tripsSubtitleClass,
+  tripsNewButtonClass,
+  tripsGridClass,
+  tripsSectionClass,
+  tripsSectionTitleClass,
+  tripsStatusClass,
+  tripsErrorClass,
+  tripsFooterNoteClass,
+  tripFormClass,
+  tripFormRowClass,
+  tripFormFieldClass,
+  tripFormInputClass,
+  tripFormSelectClass,
+  tripFormSubmitClass,
+  tripFormCancelClass,
+} from "./styles/tailwindStyles";
 
 // export default function TripsPage() {
 //   const [trips, setTrips] = useState([]);
@@ -45,16 +44,16 @@
 //     setLoading(true);
 //     setError("");
 
-//     try {
-//       // const response = await api.get("trips/");
-//       // setTrips(response.data);
-//       setTrips(mockTrips);
-//     } catch (err) {
-//       setError("Could not load trips.");
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
+    try {
+      const response = await api.get("trips/");
+      setTrips(response.data);
+      setTrips(mockTrips);
+    } catch (err) {
+      setError("Could not load trips.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
 //   useEffect(() => {
 //     loadTrips();
@@ -73,24 +72,24 @@
 //     setSubmitting(true);
 //     setError("");
 
-//     try {
-//       // const response = await api.post("trips/", newTrip);
-//       // setTrips([...trips, response.data]);
-//       const chosenGroup = mockGroups.find(
-//         (group) => group.id === Number(newTrip.group_id),
-//       );
-//       const fakeTrip = {
-//         id: Date.now(),
-//         group_id: Number(newTrip.group_id),
-//         group_name: chosenGroup ? chosenGroup.name : "",
-//         name: newTrip.name,
-//         city: newTrip.city,
-//         state: newTrip.state,
-//         country: newTrip.country,
-//         vote_count: 0,
-//         has_voted: false,
-//       };
-//       setTrips([...trips, fakeTrip]);
+    try {
+      const response = await api.post("trips/", newTrip);
+      setTrips([...trips, response.data]);
+      // const chosenGroup = mockGroups.find(
+      //   (group) => group.id === Number(newTrip.group_id),
+      // );
+      // const fakeTrip = {
+      //   id: Date.now(),
+      //   group_id: Number(newTrip.group_id),
+      //   group_name: chosenGroup ? chosenGroup.name : "",
+      //   name: newTrip.name,
+      //   city: newTrip.city,
+      //   state: newTrip.state,
+      //   country: newTrip.country,
+      //   vote_count: 0,
+      //   has_voted: false,
+      // };
+      // setTrips([...trips, fakeTrip]);
 
 //       setNewTrip({
 //         name: "",
@@ -107,35 +106,45 @@
 //     }
 //   };
 
-//   const handleVoteTrip = async (trip) => {
-//     setBusyTripId(trip.id);
-//     setError("");
+  const groupedTrips = trips.reduce((sections, trip) => {
+    const section = sections.find((item) => item.group_id === trip.group_id);
+    if (section) {
+      section.trips.push(trip);
+    } else {
+      sections.push({
+        group_id: trip.group_id,
+        group_name: trip.group_name,
+        trips: [trip],
+      });
+    }
+    return sections;
+  }, []);
 
-//     try {
-//       if (trip.has_voted) {
-//         // await api.delete(`trips/${trip.id}/vote/`);
-//         setTrips(
-//           trips.map((item) =>
-//             item.id === trip.id
-//               ? {
-//                   ...item,
-//                   has_voted: false,
-//                   vote_count: item.vote_count - 1,
-//                 }
-//               : item,
-//           ),
-//         );
-//       } else {
-//         // await api.post(`trips/${trip.id}/vote/`);
-//         setTrips(
-//           trips.map((item) => {
-//             if (item.id === trip.id) {
-//               return {
-//                 ...item,
-//                 has_voted: true,
-//                 vote_count: item.vote_count + 1,
-//               };
-//             }
+  const handleVoteTrip = async (trip) => {
+    setBusyTripId(trip.id);
+    setError("");
+
+    try {
+      if (trip.has_voted) {
+        await api.delete(`trips/${trip.id}/vote/`);
+        setTrips(
+          trips.map((item) =>
+            item.id === trip.id
+              ? { ...item, has_voted: false, vote_count: item.vote_count - 1 }
+              : item,
+          ),
+        );
+      } else {
+        await api.post(`trips/${trip.id}/vote/`);
+        setTrips(
+          trips.map((item) => {
+            if (item.id === trip.id) {
+              return {
+                ...item,
+                has_voted: true,
+                vote_count: item.vote_count + 1,
+              };
+            }
 
 //             if (
 //               item.group_id === trip.group_id &&
@@ -171,10 +180,10 @@
 //         </button>
 //       </div>
 
-//       <p className={tripsSubtitleClass}>
-//         Vote for ONE trip per group — voting again switches
-//         your vote · full CRUD on trips
-//       </p>
+      {/* <p className={tripsSubtitleClass}>
+        Vote for ONE trip per group — voting again switches your vote · full
+        CRUD on trips
+      </p> */}
 
 //       {showForm && (
 //         <form
@@ -296,23 +305,28 @@
 //         <p className={tripsStatusClass}>No trips yet.</p>
 //       )}
 
-//       {!loading && !error && trips.length > 0 && (
-//         <div className={tripsGridClass}>
-//           {trips.map((trip) => (
-//             <TripCard
-//               key={trip.id}
-//               trip={trip}
-//               onVoteClick={() => handleVoteTrip(trip)}
-//               busy={busyTripId === trip.id}
-//             />
-//           ))}
-//         </div>
-//       )}
+      {!loading &&
+        !error &&
+        groupedTrips.map((section) => (
+          <section key={section.group_id} className={tripsSectionClass}>
+            <h2 className={tripsSectionTitleClass}>{section.group_name}</h2>
+            <div className={tripsGridClass}>
+              {section.trips.map((trip) => (
+                <TripCard
+                  key={trip.id}
+                  trip={trip}
+                  onVoteClick={() => handleVoteTrip(trip)}
+                  busy={busyTripId === trip.id}
+                />
+              ))}
+            </div>
+          </section>
+        ))}
 
-//       <p className={tripsFooterNoteClass}>
-//         activities per trip are view-only here · Details →
-//         Trip Detail / Activities page
-//       </p>
-//     </div>
-//   );
-// }
+      {/* <p className={tripsFooterNoteClass}>
+        activities per trip are view-only here · Details → Trip Detail /
+        Activities page
+      </p> */}
+    </div>
+  );
+}

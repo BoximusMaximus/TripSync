@@ -90,7 +90,9 @@ const LoginPage = () => {
         </nav>
 
         <div className={authCardBodyClass}>
-          <h1 className={authTitleClass}>Welcome back</h1>
+          <h1 data-cy="greeting" className={authTitleClass}>
+            Welcome back
+          </h1>
 
           <p className={authSubtitleClass}>
             Log in to continue planning your trip.
