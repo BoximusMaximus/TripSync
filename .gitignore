@@ -38,3 +38,6 @@ build/
 # Personal Files
 db-terminal-start.sh
 django-terminal-start.sh
+
+# curl cookie jar from the API walkthrough (live auth cookies)
+jar

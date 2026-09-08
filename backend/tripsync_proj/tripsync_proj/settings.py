@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     "activities_app",
     "auth_user_app",
     "trip_app",
+    "group_app",
 ]
 
 MIDDLEWARE = [
@@ -143,8 +144,8 @@ REST_FRAMEWORK = {
         "rest_framework.throttling.UserRateThrottle",
     ],
     "DEFAULT_THROTTLE_RATES": {
-        "anon": "10/min",
-        "user": "30/min",
+        "anon": "100/min",
+        "user": "300/min",
     },
 }
 
