@@ -12,6 +12,7 @@ import {
   mapViewPlaceholderLabelClass,
   mapViewPinClass,
   mapViewOverlayClass,
+  mapViewEmptyOverlayClass,
   mapViewLoadingClass,
   mapViewStateWrapClass,
 } from "./styles/tailwindStyles";
@@ -47,10 +48,15 @@ const getGoogleMapsLibraries = () => {
 
 const DEFAULT_CENTER = { lat: 39.8283, lng: -98.5795 }; // continental US
 
-// A misconfigured/invalid key doesn't reject the load promise — Google's
-// script just never finishes initializing — so bail out of "loading" after
-// this long instead of spinning forever.
+// A rejected key (wrong referrer, API not enabled, billing off) does NOT reject
+// the load promise: Google's bootstrap answers 200, the libraries resolve, and
+// Google then calls the global `gm_authFailure` and paints its own grey error
+// box. That hook is wired below so the app can say why. The timeout only covers
+// a script that never arrives at all (blocked network, extension).
 const LOAD_TIMEOUT_MS = 8000;
+
+const AUTH_FAILURE_MESSAGE =
+  "Google rejected the Maps key. In Cloud Console, check the key's HTTP-referrer list includes this site and the Maps JavaScript API is enabled for it.";
 
 /** Resolves a location to {lat, lng}, via Places when only a placeId is given. */
 const resolveLatLng = (libraries, location) =>
@@ -123,10 +129,18 @@ const MapView = ({
     const timeoutId = setTimeout(() => {
       if (!isMounted) return;
       setLoadError(
-        "Google Maps didn't respond. Check that VITE_GOOGLE_MAPS_API_KEY is valid and the Maps JavaScript API is enabled for it.",
+        "Google Maps didn't respond. The script may be blocked (browser extension or network) — check the browser console.",
       );
       setLoadStatus("error");
     }, LOAD_TIMEOUT_MS);
+
+    // Google's only signal for a rejected key is this global callback.
+    window.gm_authFailure = () => {
+      if (!isMounted) return;
+      clearTimeout(timeoutId);
+      setLoadError(AUTH_FAILURE_MESSAGE);
+      setLoadStatus("error");
+    };
 
     getGoogleMapsLibraries()
       .then(({ Map }) => {
@@ -150,6 +164,7 @@ const MapView = ({
     return () => {
       isMounted = false;
       clearTimeout(timeoutId);
+      window.gm_authFailure = undefined;
     };
   }, []);
 
@@ -269,8 +284,10 @@ const MapView = ({
           </div>
         )}
 
+        {/* Non-blocking: the base map stays visible and draggable behind the note,
+            so a trip with no located activities still shows a map, not a grey card. */}
         {showEmpty && (
-          <div className={mapViewOverlayClass}>
+          <div className={mapViewEmptyOverlayClass}>
             <div className={mapViewStateWrapClass}>
               <EmptyState
                 title="No activity locations yet"

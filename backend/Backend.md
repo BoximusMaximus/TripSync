@@ -72,7 +72,7 @@ Base path: `/api/v1/trips/` (`tripsync_proj/urls.py` -> `trip_app.urls`). All re
 | PUT    | `/api/v1/trips/<trip_id>/` | `TripById` | Full update via `TripSerializer`. `400` with field errors on bad input. |
 | DELETE | `/api/v1/trips/<trip_id>/` | `TripById` | Deletes the trip, returns `204`. |
 
-`TripSerializer` (`serializers.py`) exposes `id`, `name`, `city`, `state`, `country` (`id` read-only).
+`TripSerializer` (`serializers.py`) exposes `id`, `name`, `city`, `state`, `zip` (optional, `""` when not given), `country` (`id` read-only).
 
 **Note for the team:** no ownership/membership check yet on `TripById` — any authenticated user can GET/PUT/DELETE any trip by ID, not just trips they belong to. Fine for now, worth tightening later.
 
@@ -109,7 +109,7 @@ Base path: `/api/v1/activities/` (`tripsync_proj/urls.py` -> `activities_app.url
 | GET | `/api/v1/activities/lodging/<trip_id>/` | `ALodging` | 404 until set |
 | PUT | `/api/v1/activities/lodging/<trip_id>/` | `ALodging` | 201 first set / 200 replace; always geocodes; 400 if no location or Google fails (nothing written — the old row survives a failed replace); 404 unknown trip |
 | DELETE | `/api/v1/activities/lodging/<trip_id>/` | `ALodging` | 204; 404 if not set |
-| GET | `/api/v1/activities/search/?trip=<id>&query=<text>` | `FindActivities` | list of places around the lodging; 400 if no lodging; 502 if Google fails |
+| GET | `/api/v1/activities/search/?trip=<id>&query=<text>` | `FindActivities` | list of places around the lodging when one is set, else around the trip's geocoded city/state/country; 400 only if that destination cannot be located; 502 if Google fails |
 
 ## Created User Tests
 Inside of our "tripsync_proj", youll find a "tests" directory with a backend test.

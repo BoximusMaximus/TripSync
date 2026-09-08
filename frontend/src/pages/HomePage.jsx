@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+import api from "../utilities";
 import GroupCard from "../components/GroupCard";
 import TripCard from "../components/TripCard";
 import MapView from "../components/GoogleMapSnippet";
 import EmptyState from "../components/EmptyState";
 import ErrorState from "../components/ErrorState";
-import { mockHomeData } from "./HomePage.mockData";
 
 import {
   homePageClass,
@@ -17,21 +17,49 @@ import {
   homeDetailsLinkClass,
 } from "./styles/tailwindStyles";
 
-// TODO: replace with a real API call (e.g. GET /api/groups/mine + trips)
-// once those endpoints exist. Isolated here so swapping it out never
-// touches GroupCard / TripCard / MapView, which only take props.
-const fetchHomeData = () =>
-  new Promise((resolve) => {
-    setTimeout(() => resolve(mockHomeData), 300);
+// The dashboard shows the user's most recent trip: the last group they belong
+// to (a group is one trip's member list), that trip, and its activities for
+// the map. Same requests TripsPage and TripPage make — there is no dedicated
+// dashboard endpoint yet. GroupCard / TripCard / MapView only take props.
+const fetchHomeData = async () => {
+  const groupResponse = await api.get("users/groups/");
+  const groups = groupResponse.data;
+
+  if (groups.length === 0) {
+    return { group: null, trip: null, activities: [] };
+  }
+
+  const group = groups[groups.length - 1];
+  const tripResponse = await api.get(`trips/${group.trip}/`);
+  const trip = tripResponse.data;
+  const activityResponse = await api.get("activities/", {
+    params: { trip: trip.id },
   });
+
+  return {
+    group: {
+      id: group.id,
+      name: trip.name,
+      member_count: group.auth_user.length,
+      is_member: true,
+      is_leader: false,
+    },
+    trip,
+    activities: activityResponse.data.map((activity) => ({
+      id: activity.id,
+      name: activity.name,
+      lat: activity.latitude,
+      lng: activity.longitude,
+      placeId: activity.place_id,
+    })),
+  };
+};
 
 const HomePage = () => {
   const navigate = useNavigate();
   const [status, setStatus] = useState("loading");
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
-  const [hasVoted, setHasVoted] = useState(false);
-  const [voteLoading, setVoteLoading] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
@@ -41,12 +69,15 @@ const HomePage = () => {
       .then((result) => {
         if (!isMounted) return;
         setData(result);
-        setHasVoted(Boolean(result.trip?.hasVoted));
         setStatus("success");
       })
       .catch((err) => {
         if (!isMounted) return;
-        setError(err?.message || "Unable to load your dashboard.");
+        setError(
+          err.response?.data?.error ||
+            err?.message ||
+            "Unable to load your dashboard.",
+        );
         setStatus("error");
       });
 
@@ -54,15 +85,6 @@ const HomePage = () => {
       isMounted = false;
     };
   }, [retryCount]);
-
-  const handleVoteToggle = () => {
-    setVoteLoading(true);
-    // TODO: call the real trip-vote endpoint; this only toggles local UI state.
-    setTimeout(() => {
-      setHasVoted((prev) => !prev);
-      setVoteLoading(false);
-    }, 300);
-  };
 
   if (status === "loading") {
     return (
@@ -96,15 +118,7 @@ const HomePage = () => {
       <div className={homeCardsRowClass}>
         {group ? (
           <GroupCard
-            group={{
-              name: group.name,
-              created_on: group.createdOn,
-              member_count: group.memberCount,
-              is_member: group.isMember,
-              is_leader: false,
-            }}
-            onJoinClick={() => navigate("/groups")}
-            onLeaveClick={() => navigate("/groups")}
+            group={group}
             onViewClick={() => navigate("/groups")}
             busy={false}
             expanded={false}
@@ -117,29 +131,17 @@ const HomePage = () => {
         ) : (
           <EmptyState
             title="No group yet"
-            message="Join or create a group to start planning."
-            action={{ label: "Go to Groups", to: "/groups" }}
+            message="Create a trip to start planning — you become its group's first member."
+            action={{ label: "Go to Trips", to: "/trips" }}
           />
         )}
 
         {trip ? (
-          <TripCard
-            trip={{
-              id: trip.id,
-              name: trip.name,
-              city: trip.destination?.city,
-              state: trip.destination?.state,
-              country: trip.destination?.country,
-              has_voted: hasVoted,
-              vote_count: trip.voteCount,
-            }}
-            onVoteClick={handleVoteToggle}
-            busy={voteLoading}
-          />
+          <TripCard trip={trip} />
         ) : (
           <EmptyState
-            title="No active trip"
-            message="Vote on a trip to see it here."
+            title="No trips yet"
+            message="Create your first trip to see it here."
             action={{ label: "Go to Trips", to: "/trips" }}
           />
         )}
@@ -149,10 +151,7 @@ const HomePage = () => {
         <MapView locations={activities} />
 
         <div className={homeMapIntroClass}>
-          <p>
-            Map shows every saved activity for the active trip, plotted by
-            Google Places ID.
-          </p>
+          <p>Map shows every saved activity for your most recent trip.</p>
 
           {trip && (
             <button

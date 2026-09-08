@@ -472,19 +472,29 @@ class FindActivitiesTests(ActivityTestCase):
         resp = self.client.get(self.url, {"trip": 999, "query": "pizza"})
         self.assertEqual(resp.status_code, 404)
 
-    #tests the center rule - a trip with no lodging cannot search (there is no center to bias to)
+    #tests the fallback center - no lodging -> the trip's city/state/country is geocoded (one GET)
+        # and the search is biased there with the wide city-sized radius; the UI has no lodging form yet
     @patch.dict("os.environ", GOOGLE_ENV)
     @patch("requests.post")
-    def test_03_no_lodging_is_400(self, mock_post):
+    @patch("requests.get")
+    def test_03_no_lodging_falls_back_to_the_trip_destination(self, mock_get, mock_post):
+        mock_get.return_value = mock_google(200, V4_ADDRESS)
+        mock_post.return_value = mock_google(200, PLACES_RESULT)
         resp = self.client.get(self.url, {"trip": self.trip.id, "query": "pizza"})
-        self.assertEqual(resp.status_code, 400)
-        self.assertEqual(resp.data, {"error": "Set where the group is staying first"})
-        mock_post.assert_not_called()
+        with self.subTest():
+            self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.data[0]["place_id"], "ChIJpizza")
+        self.assertTrue(mock_get.call_args.args[0].endswith("/v4/geocode/address/Honolulu%2C%20HI%2C%20USA"))
+        body = mock_post.call_args.kwargs["json"]
+        self.assertEqual(body["locationBias"]["circle"]["center"], {"latitude": 21.284301, "longitude": -157.812345})
+        self.assertEqual(body["locationBias"]["circle"]["radius"], 20000.0)   #DESTINATION_RADIUS_M
 
     #tests the happy path - results come back as a list and the search is biased to the lodging's pin
+        # with a lodging set, google is never asked to geocode the destination
     @patch.dict("os.environ", GOOGLE_ENV)
     @patch("requests.post")
-    def test_04_search_is_centered_on_the_lodging(self, mock_post):
+    @patch("requests.get")
+    def test_04_search_is_centered_on_the_lodging(self, mock_get, mock_post):
         make_lodging(self.trip)
         mock_post.return_value = mock_google(200, PLACES_RESULT)
         resp = self.client.get(
@@ -494,12 +504,23 @@ class FindActivitiesTests(ActivityTestCase):
             self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.data[0]["place_id"], "ChIJpizza")
         self.assertEqual(resp.data[0]["name"], "Pizza Place")
+        mock_get.assert_not_called()
         body = mock_post.call_args.kwargs["json"]
         self.assertEqual(body["textQuery"], "pizza")
         self.assertEqual(body["locationBias"]["circle"]["center"], {"latitude": 21.275, "longitude": -157.825})
         self.assertEqual(body["locationBias"]["circle"]["radius"], 8047.0)
         self.assertEqual(body["minRating"], 4.0)
         self.assertEqual(body["pageSize"], 10)                      #the default
+
+    #tests the lodging default radius - no radius_m sent -> 5 km around an address, not 20 km
+    @patch.dict("os.environ", GOOGLE_ENV)
+    @patch("requests.post")
+    def test_04b_lodging_uses_the_tight_default_radius(self, mock_post):
+        make_lodging(self.trip)
+        mock_post.return_value = mock_google(200, PLACES_RESULT)
+        resp = self.client.get(self.url, {"trip": self.trip.id, "query": "pizza"})
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(mock_post.call_args.kwargs["json"]["locationBias"]["circle"]["radius"], 5000.0)
 
     #tests the upstream-failure contract - google says no -> 502, not a 400 that blames the user
     @patch.dict("os.environ", GOOGLE_ENV)
@@ -511,13 +532,29 @@ class FindActivitiesTests(ActivityTestCase):
         self.assertEqual(resp.status_code, 502)
         self.assertEqual(resp.data, {"error": "Place search failed"})
 
-    #tests the number guard - a non-numeric radius is a 400, not a ValueError 500
+    #tests the number guard - a non-numeric radius is a 400, not a ValueError 500, and costs no google call
+        # (no lodging here on purpose: the guard must run before the destination geocode too)
     @patch.dict("os.environ", GOOGLE_ENV)
     @patch("requests.post")
-    def test_06_bad_numbers_are_400(self, mock_post):
-        make_lodging(self.trip)
+    @patch("requests.get")
+    def test_06_bad_numbers_are_400(self, mock_get, mock_post):
         resp = self.client.get(self.url, {"trip": self.trip.id, "query": "pizza", "radius_m": "far"})
         self.assertEqual(resp.status_code, 400)
+        mock_get.assert_not_called()
+        mock_post.assert_not_called()
+
+    #tests the fallback's own failure - google cannot place the destination -> 400 naming the trip fields
+    @patch.dict("os.environ", GOOGLE_ENV)
+    @patch("requests.post")
+    @patch("requests.get")
+    def test_08_unlocatable_destination_is_400(self, mock_get, mock_post):
+        mock_get.return_value = mock_google(200, {"results": []})
+        resp = self.client.get(self.url, {"trip": self.trip.id, "query": "pizza"})
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(
+            resp.data,
+            {"error": "Could not locate the trip destination - check the trip's city, state and country"},
+        )
         mock_post.assert_not_called()
 
     #tests the base class - no cookie -> 401

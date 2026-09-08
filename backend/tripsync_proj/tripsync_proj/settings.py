@@ -144,6 +144,9 @@ REST_FRAMEWORK = {
         "anon": "10/min",
         "user": "100/min",
     },
+    # nginx appends the client address to X-Forwarded-For; trust exactly that one hop so
+    # throttling keys on the real client, not on a header the client can forge
+    "NUM_PROXIES": 1,
 }
 
 # Password validation
@@ -199,3 +202,24 @@ CSRF_TRUSTED_ORIGINS = [
     "http://127.0.0.1:5173",
     "https://tripsync.duckdns.org",
 ]
+
+# Logging. Django's default config only prints when DEBUG=True (its console handler sits
+# behind require_debug_true), so with DEBUG=False every 4xx/5xx and traceback vanished from
+# `make backend-logs`. This routes them to stdout, which gunicorn and docker collect.
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "simple": {"format": "%(levelname)s %(asctime)s %(name)s: %(message)s"},
+    },
+    "handlers": {
+        "console": {"class": "logging.StreamHandler", "formatter": "simple"},
+    },
+    "root": {"handlers": ["console"], "level": "WARNING"},
+    "loggers": {
+        # 4xx at WARNING, 5xx (with traceback) at ERROR
+        "django.request": {"handlers": ["console"], "level": "WARNING", "propagate": False},
+        # google rejections (bad key, API not enabled, IP restriction) from google_maps.py
+        "activities_app": {"handlers": ["console"], "level": "INFO", "propagate": False},
+    },
+}

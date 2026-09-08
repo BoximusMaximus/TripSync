@@ -153,10 +153,10 @@ export default function TripPage() {
       // const data = await response.json();
       // setPlaceResults((data.places || []).map(flattenPlace));
 
-      // The server searches Google around the trip's lodging. Until a
-      // lodging is set for the trip (PUT activities/lodging/<trip_id>/ - no
-      // form for it yet) this answers 400 "Set where the group is staying
-      // first", which is shown below. Manual address entry works without it.
+      // The server searches Google around the trip's lodging when one is set
+      // (PUT activities/lodging/<trip_id>/ - no form for it yet), otherwise
+      // around the trip's own city/state/country. A 400 means Google could not
+      // place the destination; a 502 means Google itself failed.
       const response = await api.get("activities/search/", {
         params: { trip: tripId, query: placeQuery },
       });
@@ -164,6 +164,11 @@ export default function TripPage() {
       setSelectedPlace(null);
     } catch (err) {
       setFormError(err.response?.data?.error || "Could not search places.");
+      // Nothing to pick from - open the manual address fields so the activity
+      // can still be added instead of leaving a dead end.
+      if (err.response?.status === 400) {
+        setManualAddress(true);
+      }
     } finally {
       setPlacesLoading(false);
     }
@@ -374,7 +379,7 @@ export default function TripPage() {
         <div>
           <h1 className={tripDetailTitleClass}>{trip.name}</h1>
           <p className={tripDetailLocationClass}>
-            {trip.city}, {trip.state}, {trip.country}
+            {trip.city}, {trip.state}{trip.zip ? ` ${trip.zip}` : ""}, {trip.country}
           </p>
         </div>
 

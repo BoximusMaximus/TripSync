@@ -12,6 +12,10 @@ from .serializers import ActivitySerializer, LodgingSerializer
 
 LOCATION_FIELDS = ["street", "city", "state", "zip", "country"]
 
+#default search bias (metres): tight around a lodging address, wide around a city-sized destination
+LODGING_RADIUS_M = 5000.0
+DESTINATION_RADIUS_M = 20000.0
+
 
 class ActivityView(APIView):
     permission_classes = [IsAuthenticated]
@@ -220,7 +224,8 @@ class ALodging(ActivityView):
 
 
 class FindActivities(ActivityView):
-    #endpoint: GET /api/v1/activities/search/?trip=<id>&query=<text>[&radius_m=5000][&min_rating=4][&max_results=10]
+    #endpoint: GET /api/v1/activities/search/?trip=<id>&query=<text>[&radius_m][&min_rating=4][&max_results=10]
+    #centered on the trip's lodging when one is set, else on the trip's destination (city/state/country)
     def get(self, request):
         trip_id = request.query_params.get("trip")
         query = request.query_params.get("query", "").strip()
@@ -230,15 +235,10 @@ class FindActivities(ActivityView):
                 status=s.HTTP_400_BAD_REQUEST,
             )
         trip = get_object_or_404(Trip, id=trip_id)
-        #the lodging is the center of the search - no lodging, no search
-        lodging = Lodging.objects.filter(trip=trip).first()
-        if lodging is None:
-            return Response(
-                {"error": "Set where the group is staying first"},
-                status=s.HTTP_400_BAD_REQUEST,
-            )
+        #numbers first - a bad number must never cost a google call
         try:
-            radius_m = float(request.query_params.get("radius_m", 5000))
+            radius_param = request.query_params.get("radius_m")
+            radius_m = float(radius_param) if radius_param else None
             max_results = int(request.query_params.get("max_results", 10))
             min_rating = request.query_params.get("min_rating")
             min_rating = float(min_rating) if min_rating else None
@@ -247,11 +247,18 @@ class FindActivities(ActivityView):
                 {"error": "radius_m, min_rating and max_results must be numbers"},
                 status=s.HTTP_400_BAD_REQUEST,
             )
+        center = self.search_center(trip)
+        if center is None:
+            return Response(
+                {"error": "Could not locate the trip destination - check the trip's city, state and country"},
+                status=s.HTTP_400_BAD_REQUEST,
+            )
+        latitude, longitude, default_radius = center
         places = search_places(
             query,
-            latitude=lodging.latitude,
-            longitude=lodging.longitude,
-            radius_m=radius_m,
+            latitude=latitude,
+            longitude=longitude,
+            radius_m=radius_m if radius_m is not None else default_radius,
             min_rating=min_rating,
             max_results=max_results,
         )
@@ -259,3 +266,14 @@ class FindActivities(ActivityView):
             #upstream failed - 502 says "google, not you"; CJs's 400 vocabulary would blame the client
             return Response({"error": "Place search failed"}, status=s.HTTP_502_BAD_GATEWAY)
         return Response(places)
+
+    #helper - the lodging pin when set (tight bias), else the trip's destination geocoded (wide bias)
+    #returns (latitude, longitude, default_radius_m) or None when google cannot place the destination
+    def search_center(self, trip):
+        lodging = Lodging.objects.filter(trip=trip).first()
+        if lodging is not None:
+            return lodging.latitude, lodging.longitude, LODGING_RADIUS_M
+        geo = geocode_address(city=trip.city, state=trip.state, country=trip.country)
+        if geo is None:
+            return None
+        return geo["latitude"], geo["longitude"], DESTINATION_RADIUS_M

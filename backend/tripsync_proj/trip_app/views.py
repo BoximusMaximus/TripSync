@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.db import transaction
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -15,10 +15,12 @@ class CreateTrip(APIView):
     def post(self, request):
         serializer = TripSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        trip = serializer.save()
 
-        group = Group.objects.create(trip=trip)
-        group.auth_user.add(request.user)
+        # two rows, one request - a failed group create must not leave an orphan trip
+        with transaction.atomic():
+            trip = serializer.save()
+            group = Group.objects.create(trip=trip)
+            group.auth_user.add(request.user)
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 

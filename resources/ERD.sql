@@ -23,6 +23,7 @@ CREATE TABLE "trips" (
     "name"     VARCHAR(255) NOT NULL,
     "city"     VARCHAR(255) NOT NULL,
     "state"    VARCHAR(255) NOT NULL,
+    "zip"      VARCHAR(255) NOT NULL DEFAULT '',  -- optional at the API; '' when not given
     "country"  VARCHAR(255) NOT NULL,
     PRIMARY KEY ("id"),
     CONSTRAINT "trips_group_id_fk" FOREIGN KEY ("group_id")
