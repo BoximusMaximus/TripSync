@@ -14,6 +14,9 @@ const refreshAccessToken = () => {
     {},
     {
       withCredentials: true,
+      withXSRFToken: true,
+      xsrfCookieName: "csrftoken",
+      xsrfHeaderName: "X-CSRFToken",
     },
   );
 };
@@ -24,13 +27,18 @@ client.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    const isRefreshCall =
-      originalRequest?.url?.includes("token/refresh");
+    const url = originalRequest?.url || "";
+
+    const isAuthRequest =
+      url.includes("login/") ||
+      url.includes("signup/") ||
+      url.includes("logout/") ||
+      url.includes("token/refresh/");
 
     if (
       error.response?.status === 401 &&
       !originalRequest?._retry &&
-      !isRefreshCall
+      !isAuthRequest
     ) {
       originalRequest._retry = true;
 
@@ -38,8 +46,8 @@ client.interceptors.response.use(
         await refreshAccessToken();
 
         return client(originalRequest);
-      } catch (refreshError) {
-        return Promise.reject(refreshError);
+      } catch {
+        return Promise.reject(error);
       }
     }
 
