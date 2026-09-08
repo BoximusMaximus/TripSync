@@ -10,9 +10,11 @@ erDiagram
     TRIPS ||--o{ TRIP_VOTES : receives
     AUTH_USER ||--o{ ACTIVITY_VOTES : casts
     ACTIVITIES ||--o{ ACTIVITY_VOTES : receives
+    ACTIVITIES ||--o| ACTIVITY_GEOCODES : "pinned at"
+    TRIPS ||--o| LODGINGS : "stays at"
 
     AUTH_USER {
-        int id PK
+        bigint id PK
         string username
         string email
     }
@@ -23,7 +25,7 @@ erDiagram
     }
     MEMBERSHIPS {
         bigint id PK
-        int user_id FK
+        bigint user_id FK
         bigint group_id FK
         boolean read_access
         boolean write_access
@@ -49,16 +51,42 @@ erDiagram
         string place_id
         integer cost_estimate_cents
         string description
+        timestamptz created_at
+        timestamptz updated_at
+    }
+    ACTIVITY_GEOCODES {
+        bigint id PK
+        bigint activity_id FK
+        decimal latitude
+        decimal longitude
+        string formatted_address
+        timestamptz created_at
+    }
+    LODGINGS {
+        bigint id PK
+        bigint trip_id FK
+        string name
+        string street
+        string city
+        string state
+        string zip
+        string country
+        string place_id
+        decimal latitude
+        decimal longitude
+        string formatted_address
+        timestamptz created_at
+        timestamptz updated_at
     }
     TRIP_VOTES {
         bigint id PK
-        int user_id FK
+        bigint user_id FK
         bigint trip_id FK
         timestamptz created_at
     }
     ACTIVITY_VOTES {
         bigint id PK
-        int user_id FK
+        bigint user_id FK
         bigint activity_id FK
         timestamptz created_at
     }

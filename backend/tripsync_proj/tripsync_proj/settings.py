@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     "activities_app",
     "auth_user_app",
     "trip_app",
+    "group_app",
 ]
 
 MIDDLEWARE = [
