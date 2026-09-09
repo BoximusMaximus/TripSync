@@ -14,7 +14,7 @@ COPY . .
 # Build-time only: vite inlines VITE_* into the bundle, so the key has to be here when
 # `npm run build` runs. .dockerignore drops every .env file from the context on purpose;
 # docker-compose.prod.yml passes this arg (resolved from backend/.env by the Makefile).
-ARG VITE_GOOGLE_MAPS_API_KEY
+#ARG VITE_GOOGLE_MAPS_API_KEY
 
 RUN npm run build
 
