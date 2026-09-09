@@ -30,6 +30,7 @@ export default function GroupCard({
     return (
         <div className="Group_Card">
             <h3 className="Group_Name">{group.name}</h3>
+            <p className="Group_Id">Group ID: {group.id}</p>
             <p className="Members">
                 {group.member_count} members{/* · created {group.created_on} */}
             </p>

@@ -8,9 +8,17 @@ const errorMessage = (error) => {
     return "Could not reach the server";
   }
 
-  return typeof data === "string"
-    ? data
-    : JSON.stringify(data);
+  if (typeof data === "string") {
+    return data;
+  }
+
+  const firstError = Object.values(data)[0];
+
+  if (Array.isArray(firstError)) {
+    return firstError[0];
+  }
+
+  return "Something went wrong. Please try again.";
 };
 
 export const signUp = async (username, email, password) => {
@@ -61,12 +69,10 @@ export const userConfirmation = async () => {
     const response = await client.get("info/");
     return response.data;
   } catch (error) {
-    
     if (error.response?.status === 401) {
       return null;
     }
 
-    
     console.error(errorMessage(error));
     return null;
   }
