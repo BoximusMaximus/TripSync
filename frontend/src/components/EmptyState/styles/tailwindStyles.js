@@ -12,4 +12,4 @@ export const emptyStateMessageClass =
   "m-0 max-w-sm text-sm text-[var(--text-muted)]";
 
 export const emptyStateActionClass =
-  "mt-2 px-4 py-2 rounded-md text-sm font-semibold text-black bg-[var(--accent)] hover:bg-[var(--accent-hover)] transition-colors duration-200";
+  "mt-2 px-4 py-2 rounded-md text-sm font-semibold !text-black hover:!text-black bg-[var(--accent)] hover:bg-[var(--accent-hover)] transition-colors duration-200";
