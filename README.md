@@ -13,6 +13,7 @@ A collaborative travel-planning app for groups. Members join a travel group and 
 | The database schema                                              | [`resources/ERD.sql`](resources/ERD.sql) · [diagram](resources/travel_planner_erd.png)            |
 | Wireframes and shared components                                 | [`resources/wireframes/`](resources/wireframes) · [`resources/components/`](resources/components) |
 | Course requirements                                              | [`resources/1_project_requirements.md`](resources/1_project_requirements.md)                      |
+| **Deploying to EC2** — env file, `make deploy`, TLS, what to check when it breaks | [`DEPLOY.md`](DEPLOY.md) |
 
 ## Stack
 
@@ -24,7 +25,8 @@ Django + DRF · PostgreSQL · Vite + React · Docker Compose · GitHub Actions �
 backend/       Django project (tripsync_proj)
 frontend/      Vite + React app
 resources/     Planning docs, ERD, wireframe exports
-compose.yaml   Docker Compose services
+docker-compose.yml       Dev stack (runserver + vite)
+docker-compose.prod.yml  EC2 stack (gunicorn + nginx) - see DEPLOY.md
 SharedNotes.md Running team notes
 ```
 

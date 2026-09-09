@@ -16,6 +16,11 @@ export const mapViewMapClass = "absolute inset-0 w-full h-full";
 export const mapViewOverlayClass =
   "absolute inset-0 flex items-center justify-center bg-[var(--bg-panel)]";
 
+// Sits along the bottom edge and lets clicks through, so the live map behind it
+// stays usable when there is nothing to plot yet.
+export const mapViewEmptyOverlayClass =
+  "absolute inset-x-0 bottom-0 flex justify-center pointer-events-none";
+
 export const mapViewPlaceholderLabelClass =
   "px-3 py-1.5 text-xs font-medium text-center text-[var(--text-muted)] bg-[var(--bg-panel)] border border-[var(--border)] rounded-md";
 
