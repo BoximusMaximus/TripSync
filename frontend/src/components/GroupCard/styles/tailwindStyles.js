@@ -27,7 +27,7 @@ export const groupMembersTitleClass =
 export const groupMemberRowClass =
   "flex items-center justify-between gap-2 py-1 text-[13px]";
 
-export const groupMemberNameClass = "text-gray-800";
+export const groupMemberNameClass = "text-[var(--text-strong)]";
 
 export const groupMemberLeaderTagClass =
   "ml-1.5 rounded bg-gray-100 px-1.5 py-0.5 text-[11px] text-gray-600";

@@ -51,7 +51,7 @@ export default function TripsPage() {
   // const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  // const [busyTripId, setBusyTripId] = useState(null);
+  const [busyTripId, setBusyTripId] = useState(null);
 
   const [showForm, setShowForm] = useState(false);
   const [newTrip, setNewTrip] = useState(emptyTrip);
@@ -125,6 +125,24 @@ export default function TripsPage() {
       setError(describeApiError(err, "Could not create trip."));
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleDeleteTrip = async (tripId) => {
+    if (!window.confirm("Delete this trip?")) {
+      return;
+    }
+
+    setBusyTripId(tripId);
+    setError("");
+
+    try {
+      await api.delete(`trips/${tripId}/`);
+      setTrips(trips.filter((trip) => trip.id !== tripId));
+    } catch (err) {
+      setError(describeApiError(err, "Could not delete trip."));
+    } finally {
+      setBusyTripId(null);
     }
   };
 
@@ -349,7 +367,12 @@ export default function TripsPage() {
       {!loading && !error && trips.length > 0 && (
         <div className={tripsGridClass}>
           {trips.map((trip) => (
-            <TripCard key={trip.id} trip={trip} />
+            <TripCard
+              key={trip.id}
+              trip={trip}
+              onDeleteClick={() => handleDeleteTrip(trip.id)}
+              busy={busyTripId === trip.id}
+            />
           ))}
         </div>
       )}
