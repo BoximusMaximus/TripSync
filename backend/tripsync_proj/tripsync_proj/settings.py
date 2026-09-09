@@ -14,11 +14,7 @@ from pathlib import Path
 import os
 from datetime import timedelta
 
-
 BASE_DIR = Path(__file__).resolve().parent.parent
-
-
-
 
 
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
@@ -141,8 +137,8 @@ REST_FRAMEWORK = {
         "rest_framework.throttling.UserRateThrottle",
     ],
     "DEFAULT_THROTTLE_RATES": {
-        "anon": "10/min",
-        "user": "100/min",
+        "anon": "1000/min",
+        "user": "1000/min",
     },
     # nginx appends the client address to X-Forwarded-For; trust exactly that one hop so
     # throttling keys on the real client, not on a header the client can forge
@@ -218,8 +214,16 @@ LOGGING = {
     "root": {"handlers": ["console"], "level": "WARNING"},
     "loggers": {
         # 4xx at WARNING, 5xx (with traceback) at ERROR
-        "django.request": {"handlers": ["console"], "level": "WARNING", "propagate": False},
+        "django.request": {
+            "handlers": ["console"],
+            "level": "WARNING",
+            "propagate": False,
+        },
         # google rejections (bad key, API not enabled, IP restriction) from google_maps.py
-        "activities_app": {"handlers": ["console"], "level": "INFO", "propagate": False},
+        "activities_app": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
     },
 }
