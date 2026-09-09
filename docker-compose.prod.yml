@@ -37,10 +37,10 @@ services:
   frontend:
     build:
       context: ./frontend
-      args:
+#      args:
         # build-time only (vite inlines it into the bundle); the Makefile's --env-file
         # makes this resolve from backend/.env, so the whole deploy has one env file
-        VITE_GOOGLE_MAPS_API_KEY: "${VITE_GOOGLE_MAPS_API_KEY}"
+ #       VITE_GOOGLE_MAPS_API_KEY: "${VITE_GOOGLE_MAPS_API_KEY}"
     container_name: react-container
     restart: unless-stopped
     env_file:
