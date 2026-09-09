@@ -7,6 +7,15 @@ services:
       - ./backend/.env
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}",
+        ]
+      interval: 2s
+      timeout: 5s
+      retries: 15
 
   redis:
     image: redis:7
@@ -20,13 +29,22 @@ services:
     env_file:
       - ./backend/.env
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        # build-time only (vite inlines it into the bundle); the Makefile's --env-file
+        # makes this resolve from backend/.env, so the whole deploy has one env file
+        VITE_GOOGLE_MAPS_API_KEY: "${VITE_GOOGLE_MAPS_API_KEY}"
     container_name: react-container
     restart: unless-stopped
+    env_file:
+      - ./frontend/.env
     ports:
       - "80:80"
       - "443:443"

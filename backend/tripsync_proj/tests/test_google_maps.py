@@ -101,6 +101,8 @@ class SearchPlacesTests(TestCase):
             "displayName": {"text": "Pizza Place", "languageCode": "en"},
             "formattedAddress": "1 Pizza St, Honolulu, HI 96815, USA",
             "location": {"latitude": 21.28, "longitude": -157.83},
+            "rating": 4.6,
+            "userRatingCount": 312,
         }]})
         result = search_places(
             "pizza", latitude=Decimal("21.275000"), longitude=Decimal("-157.825000"),
@@ -112,6 +114,8 @@ class SearchPlacesTests(TestCase):
             "formatted_address": "1 Pizza St, Honolulu, HI 96815, USA",
             "latitude": 21.28,
             "longitude": -157.83,
+            "rating": 4.6,
+            "user_rating_count": 312,
         }])
         self.assertEqual(mock_post.call_args.args[0], "https://places.googleapis.com/v1/places:searchText")
         body = mock_post.call_args.kwargs["json"]
@@ -120,7 +124,25 @@ class SearchPlacesTests(TestCase):
         self.assertEqual(body["minRating"], 4.0)
         self.assertEqual(body["locationBias"]["circle"]["center"], {"latitude": 21.275, "longitude": -157.825})
         self.assertEqual(body["locationBias"]["circle"]["radius"], 8047.0)
-        self.assertIn("X-Goog-FieldMask", mock_post.call_args.kwargs["headers"])
+        #the mask is required, and it must ask for the rating the map pins display
+        field_mask = mock_post.call_args.kwargs["headers"]["X-Goog-FieldMask"]
+        self.assertIn("places.rating", field_mask)
+        self.assertIn("places.userRatingCount", field_mask)
+
+    #tests an unrated place - google omits `rating` entirely, so the key must come back
+        # as None rather than 0, which the UI shows as "no rating yet"
+    @patch.dict("os.environ", GOOGLE_ENV)
+    @patch("requests.post")
+    def test_01b_unrated_place_has_null_rating(self, mock_post):
+        mock_post.return_value = mock_google(200, {"places": [{
+            "id": "ChIJnew",
+            "displayName": {"text": "New Spot", "languageCode": "en"},
+            "formattedAddress": "2 New St, Honolulu, HI 96815, USA",
+            "location": {"latitude": 21.28, "longitude": -157.83},
+        }]})
+        result = search_places("pizza", 21.275, -157.825)
+        self.assertIsNone(result[0]["rating"])
+        self.assertEqual(result[0]["user_rating_count"], 0)
 
     #tests the clamps - google rejects more than 20 results or more than 50 km; clamp, don't 400 the user
         # and no minRating key at all when none was asked for (google would reject null)

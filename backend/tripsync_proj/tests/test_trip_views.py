@@ -49,6 +49,43 @@ class CreateTripTests(UnthrottledAPITestCase):
         group = Group.objects.get(trip=trip)
         self.assertIn(self.user, group.auth_user.all())
 
+    def test_create_trip_stores_optional_zip(self):
+        authenticate(self.client, self.user)
+
+        response = self.client.post(
+            self.url,
+            {"name": "Beach Trip", "city": "Honolulu", "state": "HI", "zip": "96815", "country": "USA"},
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["zip"], "96815")
+        self.assertEqual(Trip.objects.get(name="Beach Trip").zip, "96815")
+
+    def test_create_trip_without_zip_stores_empty_string(self):
+        authenticate(self.client, self.user)
+
+        response = self.client.post(
+            self.url,
+            {"name": "Ski Trip", "city": "Denver", "state": "CO", "country": "USA"},
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["zip"], "")
+
+    def test_create_trip_with_blank_required_fields_is_400_with_field_errors(self):
+        authenticate(self.client, self.user)
+
+        response = self.client.post(
+            self.url,
+            {"name": "Ski Trip", "city": "", "state": "", "country": ""},
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("city", response.data)
+        self.assertIn("state", response.data)
+        self.assertIn("country", response.data)
+        self.assertFalse(Trip.objects.exists())
+
 
 class TripByIdTests(UnthrottledAPITestCase):
     def setUp(self):

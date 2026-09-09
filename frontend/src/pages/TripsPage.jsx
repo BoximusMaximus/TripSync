@@ -23,6 +23,29 @@ import {
   tripFormCancelClass,
 } from "./styles/tailwindStyles";
 
+// DRF answers a validation failure with {field: [messages]}; show that instead of a
+// fixed string so "Could not create trip." never hides which field was blank.
+const describeApiError = (err, fallback) => {
+  const data = err.response?.data;
+  if (!data) return fallback;
+  if (typeof data === "string") return data;
+  if (data.error) return data.error;
+  if (data.detail) return data.detail;
+  const fieldErrors = Object.entries(data).map(
+    ([field, messages]) =>
+      `${field}: ${Array.isArray(messages) ? messages.join(" ") : messages}`,
+  );
+  return fieldErrors.length ? fieldErrors.join(" · ") : fallback;
+};
+
+const emptyTrip = {
+  name: "",
+  city: "",
+  state: "",
+  zip: "",
+  country: "",
+};
+
 export default function TripsPage() {
   const [trips, setTrips] = useState([]);
   // const [groups, setGroups] = useState([]);
@@ -31,13 +54,7 @@ export default function TripsPage() {
   // const [busyTripId, setBusyTripId] = useState(null);
 
   const [showForm, setShowForm] = useState(false);
-  const [newTrip, setNewTrip] = useState({
-    name: "",
-    city: "",
-    state: "",
-    country: "",
-    // group_id: "",
-  });
+  const [newTrip, setNewTrip] = useState(emptyTrip);
   const [submitting, setSubmitting] = useState(false);
 
   const loadTrips = async () => {
@@ -64,7 +81,7 @@ export default function TripsPage() {
       }
       setTrips(loadedTrips);
     } catch (err) {
-      setError("Could not load trips.");
+      setError(describeApiError(err, "Could not load trips."));
     } finally {
       setLoading(false);
     }
@@ -77,8 +94,19 @@ export default function TripsPage() {
   const handleCreateTrip = async (event) => {
     event.preventDefault();
 
-    // if (newTrip.name.trim() === "" || newTrip.group_id === "") {
-    if (newTrip.name.trim() === "") {
+    const trimmed = {
+      name: newTrip.name.trim(),
+      city: newTrip.city.trim(),
+      state: newTrip.state.trim(),
+      zip: newTrip.zip.trim(),
+      country: newTrip.country.trim(),
+    };
+
+    // The backend requires name, city, state and country (zip is optional). The
+    // inputs are `required` too; this guard is what stops a 400 from being sent
+    // when the browser's own validation is bypassed.
+    if (!trimmed.name || !trimmed.city || !trimmed.state || !trimmed.country) {
+      setError("Trip name, city, state and country are all required.");
       return;
     }
 
@@ -88,19 +116,13 @@ export default function TripsPage() {
     try {
       // const response = await api.post("trips/", newTrip);
       // trips/create/ makes the trip and its group with you as the first member.
-      const response = await api.post("trips/create/", newTrip);
+      const response = await api.post("trips/create/", trimmed);
       setTrips([...trips, { ...response.data, member_count: 1 }]);
 
-      setNewTrip({
-        name: "",
-        city: "",
-        state: "",
-        country: "",
-        // group_id: "",
-      });
+      setNewTrip(emptyTrip);
       setShowForm(false);
     } catch (err) {
-      setError("Could not create trip.");
+      setError(describeApiError(err, "Could not create trip."));
     } finally {
       setSubmitting(false);
     }
@@ -214,6 +236,8 @@ export default function TripsPage() {
                   setNewTrip({ ...newTrip, name: event.target.value })
                 }
                 placeholder="Oahu Reunion"
+                maxLength={255}
+                required
               />
             </label>
 
@@ -227,6 +251,8 @@ export default function TripsPage() {
                   setNewTrip({ ...newTrip, city: event.target.value })
                 }
                 placeholder="Honolulu"
+                maxLength={60}
+                required
               />
             </label>
 
@@ -240,6 +266,22 @@ export default function TripsPage() {
                   setNewTrip({ ...newTrip, state: event.target.value })
                 }
                 placeholder="HI"
+                maxLength={60}
+                required
+              />
+            </label>
+
+            <label className={tripFormFieldClass}>
+              Zip (optional)
+              <input
+                className={tripFormInputClass}
+                type="text"
+                value={newTrip.zip}
+                onChange={(event) =>
+                  setNewTrip({ ...newTrip, zip: event.target.value })
+                }
+                placeholder="96815"
+                maxLength={255}
               />
             </label>
 
@@ -253,6 +295,8 @@ export default function TripsPage() {
                   setNewTrip({ ...newTrip, country: event.target.value })
                 }
                 placeholder="USA"
+                maxLength={60}
+                required
               />
             </label>
 
