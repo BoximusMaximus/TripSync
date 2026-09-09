@@ -19,6 +19,9 @@ export const tripVoteButtonOnClass =
 export const tripDetailsLinkClass =
   "text-sm text-gray-600 no-underline hover:text-gray-900 hover:underline";
 
+export const tripDeleteButtonClass =
+  "text-[13px] text-red-600 cursor-pointer hover:underline disabled:opacity-50 disabled:cursor-not-allowed";
+
 export const tripFormClass =
   "mb-6 rounded-lg border border-gray-200 bg-white p-4";
 

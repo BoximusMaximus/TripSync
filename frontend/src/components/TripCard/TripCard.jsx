@@ -9,11 +9,13 @@ import {
     tripVoteButtonClass,
     tripVoteButtonOnClass,
     tripDetailsLinkClass,
+    tripDeleteButtonClass,
 } from "./styles/tailwindStyles";
 
 export default function TripCard({
     trip,
     onVoteClick,
+    onDeleteClick,
     busy,
 })
 {
@@ -41,6 +43,15 @@ export default function TripCard({
                 <Link to={`/trips/${trip.id}`} className={tripDetailsLinkClass}>
                     Details →
                 </Link>
+
+                <button
+                    type="button"
+                    className={tripDeleteButtonClass}
+                    onClick={onDeleteClick}
+                    disabled={busy}
+                >
+                    Delete
+                </button>
             </div>
         </div>
     );
