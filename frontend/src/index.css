@@ -1,111 +1,359 @@
+@import "tailwindcss";
+
+/* ========================================
+   TripSync Global Theme
+   Dark mode is the default
+   ======================================== */
+
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+  /* Backgrounds */
+  --bg: #21252b;
+  --bg-panel: #282c34;
+  --bg-raised: #2c313a;
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+  /* Borders */
+  --border: #3a3f4b;
+  --border-soft: #313640;
 
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  /* Text */
+  --text: #abb2bf;
+  --text-strong: #e6e6e6;
+  --text-muted: #7f8896;
 
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
+  /* Accent */
+  --accent: #61afef;
+  --accent-hover: #528bff;
+
+  /* Status colors */
+  --success: #98c379;
+  --warning: #d19a66;
+  --danger: #e06c75;
+
+  /* Typography */
+  --sans:
+    system-ui, -apple-system, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif;
+
+  --radius: 6px;
+
+  color-scheme: dark;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
+/* ========================================
+   Light Theme
+   ======================================== */
 
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
+[data-theme="light"] {
+  /* Backgrounds */
+  --bg: #ffffff;
+  --bg-panel: #f5f6f8;
+  --bg-raised: #e9ebef;
+
+  /* Borders */
+  --border: #d1d5db;
+  --border-soft: #e5e7eb;
+
+  /* Text */
+  --text: #374151;
+  --text-strong: #1f2937;
+  --text-muted: #6b7280;
+
+  /* Accent */
+  --accent: #2f80c9;
+  --accent-hover: #1f6fb5;
+
+  /* Status colors */
+  --success: #4f8a3c;
+  --warning: #b56f2c;
+  --danger: #c94b55;
+
+  color-scheme: light;
 }
 
-body {
-  margin: 0;
-}
+/* ========================================
+   Global Reset
+   ======================================== */
 
-#root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
+* {
   box-sizing: border-box;
 }
 
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
-}
-
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
-}
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
-}
-p {
+html,
+body,
+#root {
   margin: 0;
+  padding: 0;
+  min-height: 100%;
 }
 
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
-}
-
-code {
+body {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
   font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
+  line-height: 1.6;
+}
+
+/* ========================================
+   Text
+   ======================================== */
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  color: var(--text-strong);
+}
+
+p {
+  color: var(--text);
+}
+
+/* ========================================
+   Links
+   ======================================== */
+
+/*
+  Important:
+  links inherit their color so components like the
+  Login / Signup tabs can control their own colors.
+*/
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* ========================================
+   Forms
+   ======================================== */
+
+input,
+select,
+textarea {
+  font: inherit;
+
+  color: var(--text);
+
+  background: var(--bg);
+
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+
+  padding: 0.6rem 0.75rem;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-muted);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgb(97 175 239 / 15%);
+}
+
+/* ========================================
+   Buttons
+   ======================================== */
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ========================================
+   Reusable Theme Helpers
+   ======================================== */
+
+.panel {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.text-muted {
+  color: var(--text-muted);
+}
+
+.text-accent {
+  color: var(--accent);
+}
+
+.text-success {
+  color: var(--success);
+}
+
+.text-warning {
+  color: var(--warning);
+}
+
+.text-danger {
+  color: var(--danger);
+}
+@import "tailwindcss";
+
+/* ========================================
+   TripSync Global Theme
+   Dark mode is the default
+   ======================================== */
+
+:root {
+  --bg: #21252b;
+  --bg-panel: #282c34;
+  --bg-raised: #2c313a;
+
+  --border: #3a3f4b;
+  --border-soft: #313640;
+
+  --text: #abb2bf;
+  --text-strong: #e6e6e6;
+  --text-muted: #7f8896;
+
+  --accent: #61afef;
+  --accent-hover: #528bff;
+
+  --success: #98c379;
+  --warning: #d19a66;
+  --danger: #e06c75;
+
+  --sans:
+    system-ui, -apple-system, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif;
+
+  --radius: 6px;
+
+  color-scheme: dark;
+}
+
+/* ========================================
+   Light Theme
+   ======================================== */
+
+[data-theme="light"] {
+  --bg: #ffffff;
+  --bg-panel: #f5f6f8;
+  --bg-raised: #e9ebef;
+
+  --border: #d1d5db;
+  --border-soft: #e5e7eb;
+
+  --text: #374151;
+  --text-strong: #1f2937;
+  --text-muted: #6b7280;
+
+  --accent: #2f80c9;
+  --accent-hover: #1f6fb5;
+
+  --success: #4f8a3c;
+  --warning: #b56f2c;
+  --danger: #c94b55;
+
+  color-scheme: light;
+}
+
+/* ========================================
+   Global Reset
+   ======================================== */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+}
+
+body {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* ========================================
+   Text
+   ======================================== */
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  color: var(--text-strong);
+}
+
+p {
+  color: var(--text);
+}
+
+/* ========================================
+   Links
+   ======================================== */
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* ========================================
+   Forms
+   ======================================== */
+
+input,
+select,
+textarea {
+  font: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.6rem 0.75rem;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-muted);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgb(97 175 239 / 15%);
+}
+
+/* ========================================
+   Buttons
+   ======================================== */
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
